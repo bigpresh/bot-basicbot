@@ -2,14 +2,14 @@
 use ExtUtils::MakeMaker;
 WriteMakefile
 (
-          'PL_FILES' => {},
+          'NAME' => 'Bot::BasicBot',
           'VERSION_FROM' => 'lib/Bot/BasicBot.pm',
-          'INSTALLDIRS' => 'site',
           'PREREQ_PM' => {
-                           'Test::More' => '0.01',
+                           'POE' => '0.22',
                            'POE::Component::IRC' => '2',
-                           'POE' => '0.22'
+                           'Test::More' => '0.01'
                          },
-          'NAME' => 'Bot::BasicBot'
+          'INSTALLDIRS' => 'site',
+          'PL_FILES' => {}
         )
 ;

@@ -1,6 +1,18 @@
 Revision history for Perl extension Bot::BasicBot::Pluggable.
 
-Changes to 0.25 (released 31st August 2003) no available.
+0.50 2004/12/01 (revision 1366)
+  - Real (almost) tests
+  - Nick (and op/voice status) tracking
+  - Quiet some warnings
+
+0.31 2004/03/16 (revision 643)
+  - Fixed 'addressing' typo, thanks Earle
+  - Fixed annoying errors for logging
+  - Fixed stupid bug where the return value of said wasn't getting said.
+    How can I not have noticed?
+  - if you don't return true from init, be more helpful.
+  - if help doesn't return true, don't say anything
+  - Made SYNOPSIS clearer
 
 0.30 2003/01/02
   - Randomized name so you can run more than one at once in one POE session
@@ -10,12 +22,4 @@ Changes to 0.25 (released 31st August 2003) no available.
   - Made reconnect timeout changable
   - Added a NINJA
 
-0.31 2004/01/16
-  - Fixed 'addressing' typo, thanks Earle
-  - Fixed annoying errors for logging
-  - Fixed stupid bug where the return value of said wasn't getting said.
-    How can I not have noticed?
-  - if you don't return true from init, be more helpful.
-  - if help doesn't return true, don't say anything
-  - Made SYNOPSIS clearer
-
+Changes to 0.25 (released 31st August 2003) not available.

@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name: Bot-BasicBot
-version: 0.31
+version: 0.5
 author:
   - Tom Insam E<lt>tom@jerakeen.orgE<gt>
 abstract: simple irc bot baseclass
@@ -12,5 +12,5 @@ requires:
 provides:
   Bot::BasicBot:
     file: lib/Bot/BasicBot.pm
-    version: 0.31
-generated_by: Module::Build version 0.24
+    version: 0.5
+generated_by: Module::Build version 0.2602

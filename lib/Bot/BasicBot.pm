@@ -9,18 +9,20 @@ Bot::BasicBot - simple irc bot baseclass
   $bot->run();
 
   # with all known options
-  my $bot = Bot::BasicBot->new( channels => ["#bottest"],
+  my $bot = Bot::BasicBot->new(
 
-                           server => "irc.example.com",
-                           port   => "6667",
+    server => "irc.example.com",
+    port   => "6667",
+    channels => ["#bottest"],
+    
+    nick      => "basicbot",
+    alt_nicks => ["bbot", "simplebot"],
+    username  => "bot",
+    name      => "Yet Another Bot",
+    
+    ignore_list => [qw(dipsy dadadodo laotse)],
 
-                           nick      => "basicbot",
-                           alt_nicks => ["bbot", "simplebot"],
-                           username  => "bot",
-                           name      => "Yet Another Bot",
-
-                           ignore_list => [qw(dipsy dadadodo laotse)],
-                         );
+  );
   $bot->run();
 
 
@@ -34,7 +36,9 @@ folder in the Bot::BasicBot tarball. If you installed Bot::BasicBot through
 CPAN, see http://jerakeen.org/programming/Bot-BasicBot for more docs and
 examples.
 
-=head1 METHODS
+A quick summary, though - You want to define your own package that
+subclasses Bot::BasicBot, override various methods (documented below),
+then call new() and run() on it.
 
 =cut
 
@@ -50,13 +54,16 @@ use POE::Session;
 use POE::Wheel::Run;
 use POE::Filter::Line;
 use POE::Component::IRC;
+use Data::Dumper;
 
-our $VERSION = 0.31;
+our $VERSION = 0.50;
 
 use base qw( Exporter );
 our @EXPORT  = qw( say emote );
 
 our $RECONNECT_TIMEOUT = 500;
+
+=head1 STARTING THE BOT
 
 =head2 new( key => value, .. )
 
@@ -94,16 +101,6 @@ sub new {
     return $self;
 }
 
-=head2 init()
-
-called when the bot is created, as part of new(). Override to provide
-your own init. Return a true value for a successful init, or undef if
-you failed, in which case new() will die.
-
-=cut
-
-sub init { 1; }
-
 =head2 run()
 
 Runs the bot.  Hands the control over to the POE core.
@@ -136,9 +133,18 @@ sub run {
 
                 irc_join         => "irc_chanjoin_state",
                 irc_part         => "irc_chanpart_state",
+                irc_kick         => "irc_kicked_state",
+                irc_nick         => "irc_nick_state",
+                irc_mode         => "irc_mode_state",
 
-                fork_close => "fork_close_state",
-                fork_error => "fork_error_state",
+                fork_close       => "fork_close_state",
+                fork_error       => "fork_error_state",
+
+                irc_353          => "names_state",
+                irc_366          => "names_done_state",
+
+                irc_332          => "topic_raw_state",
+                irc_topic        => "topic_state",
                 
                 tick => "tick_state",
             }
@@ -151,6 +157,23 @@ sub run {
     # run
     $poe_kernel->run() unless $self->{no_run};
 }
+
+=head1 METHODS TO OVERRIDE
+
+In your Bot::BasicBot subclass, you want to override some of the following
+methods to define how your bot works. These are all object methods - the
+(implicit) first parameter to all of them will be the bot object.
+
+=head2 init()
+
+called when the bot is created, as part of new(). Override to provide
+your own init. Return a true value for a successful init, or undef if
+you failed, in which case new() will die.
+
+=cut
+
+sub init { 1; }
+
 
 =head2 said($args)
 
@@ -170,10 +193,10 @@ Who said it (the nick that said it)
 
 =item channel
 
-The channel in which they said it.  Has special value "msg" if it
-was in a message.  Actually, as you can send a message to many
-channels at once in the IRC spec, but no-one actually does this
-so it's just the first one in the list
+The channel in which they said it.  Has special value "msg" if it was in
+a message.  Actually, you can send a message to many channels at once in
+the IRC spec, but no-one actually does this so this is just the first
+one in the list.
 
 =item body
 
@@ -201,7 +224,7 @@ Returning undef will cause nothing to be said.
 
 sub said { undef }
 
-=head2 emoted($args)
+=head2 emoted( $args )
 
 This is a secondary method that you may wish to override. It gets called
 when someone in channel 'emotes', instead of talking. In its default
@@ -216,7 +239,7 @@ sub emoted {
     shift->said(@_);
 }
 
-=head2 chanjoin($mess)
+=head2 chanjoin( $mess )
 
 Called when someone joins a channel. $mess is an object similar to a
 said() message, $mess->{who} is the nick of the user who joined,
@@ -228,7 +251,7 @@ This is a do-nothing implementation, override this in your subclass.
 
 sub chanjoin { undef }
 
-=head2 chanpart($mess)
+=head2 chanpart( $mess )
 
 Called when someone leaves a channel. $mess is an object similar to a
 said() message, $mess->{who} is the nick of the user who left,
@@ -240,25 +263,116 @@ This is a do-nothing implementation, override this in your subclass.
 
 sub chanpart { undef }
 
+=head2 got_names( $mess )
+
+Whenever we have been given a definitive list of 'who is in the channel',
+this function will be called. As usual, $mess is a hash. $mess->{channel}
+will be the channel we have information for, $mess->{names} is a hashref,
+where the keys are the nicks of the users, and the values are more hashes,
+containing the two keys 'op' and 'voice', indicating if the user is a chanop
+or voiced respectively.
+
+The reply value is ignored.
+
+Normally, I wouldn't override this method - instead, just use the L<names>
+call when you want to know who's in the channel. Override this only if you
+want to be able to do something as soon as possible. Also be aware that
+the names list can be changed by other events - kicks, joins, etc, and this
+method won't be called when that happens.
+
+=cut
+
+sub got_names { undef }
+
+=head2 topic( $mess )
+
+Called when the topic of the channel changes. $mess->{channel} is the channel
+the topic was set in, $mess->{who} is the nick of the user who changed the
+channel, and $mess->{topic} will be the new topic of the channel.
+
+=cut
+
+sub topic { undef }
+
+=head2 nick_change( $mess )
+
+When a user changes nicks, this will be called. $mess looks like
+
+  { from => "old_nick",
+    to => "new_nick",
+  }
+
+=cut
+
+sub nick_change { undef }
+
+=head2 kicked( $mess )
+
+Called when a user is kicked from the channel. $mess looks like:
+
+  { channel => "#channel",
+    who => "nick",
+    kicked => "kicked",
+    reason => "reason",
+  }
+
+The reply value is ignored.
+
+=cut
+
+sub kicked { undef }
 
 =head2 tick()
 
 This is an event called every regularly. The function should return the
-amount of time untill the tick event should next be called. The default
+amount of time until the tick event should next be called. The default
 tick is called 5 seconds after the bot starts, and the default
 implementation returns '0', which disables the tick. Override this and
 return non-zero values to have an ongoing tick event.
 
-Call the C<schedule_tick> event to schedule a tick event without waiting
+Use this function if you want the bot to do something periodically, and
+don't want to mess with 'real' POE things.
+
+Call the L<schedule_tick> event to schedule a tick event without waiting
 for the next tick.
 
 =cut
 
+
 sub tick { return 0; }
+
+
+=head2 help
+
+This is the other method that you should override.  This is the text
+that the bot will respond to if someone simply says help to it.  This
+should be considered a special case which you should not attempt to
+process yourself.  Saying help to a bot should have no side effects
+whatsoever apart from returning this text.
+
+=cut
+
+sub help { "Sorry, this bot has no interactive help." }
+
+=head2 connected
+
+An optional method to override, gets called after we have connected
+to the server
+
+=cut
+
+sub connected { undef }
+
+
+
+=head1 BOT METHODS
+
+There are a few methods you can call on the bot object to do things. These
+are as follows:
 
 =head2 schedule_tick(time)
 
-Causes the C<tick> event to be called in 'time' seconds (or 5 seconds if
+Causes the L<tick> event to be called in 'time' seconds (or 5 seconds if
 time is left unspecified). Note that if the tick event is due to be
 called already, this will override it, you can't schedule multiple
 future events with this funtction.
@@ -346,7 +460,7 @@ sub forkit {
 
     return undef unless $args->{run};
 
-    $args->{handler}   = $args->{handler}   || "fork_said";
+    $args->{handler}   = $args->{handler}   || "_fork_said";
     $args->{arguments} = $args->{arguments} || [];
 
     #install a new handler in the POE kernel pointing to
@@ -380,6 +494,17 @@ sub forkit {
         }
     };
     return undef;
+}
+
+sub _fork_said {
+    my ( $self, $body, $wheel_id ) = @_[ 0, ARG0, ARG1 ];
+    chomp($body);    # remove newline necessary to move data;
+
+    # pick up the default arguments we squirreled away earlier
+    my $args = $self->{forks}->{$wheel_id}->{args};
+    $args->{body} = $body;
+
+    $self->say($args);
 }
 
 =head2 say( key => value, .. )
@@ -448,6 +573,7 @@ sub say {
 
     unless ( $who && $body ) {
         print STDERR "Can't PRIVMSG without target and body\n";
+        print STDERR " called from ".([caller]->[0])." line ".([caller]->[2])."\n";
         print STDERR " who = '$who'\n body = '$body'\n";
         return;
     }
@@ -510,7 +636,8 @@ sub emote {
 
 Reply to a message $mess. Will reply to an incoming message
 with the text '$body', in a privmsg if $mess was a privmsg, in channel if
-not, and prefixes if $mess was prefixed. Mostly a shortcut method.
+not, and prefixes if $mess was prefixed. Mostly a shortcut method - it's
+roughly equivalent to $mess->{body} = $body; $self->say($mess);
 
 =cut
 
@@ -522,50 +649,19 @@ sub reply {
     return $self->say(%hash);
 }
 
-=head2 fork_said
 
-C<fork_said> is really an internal method, the default handler
-for output from a process forked by C<forkit>. It actually takes
-its input from a non-object call to C<say>, thaws the data, picks
-up arguments, and throws them back at C<say> again. Don't ask - this
-is the way L<POE::Wheel::Run> works, and this jiggery-pokery gives us a
-nice object interface.
+
+=head2 channel_data
 
 =cut
 
-sub fork_said {
-    my ( $self, $body, $wheel_id ) = @_[ 0, ARG0, ARG1 ];
-    chomp($body);    # remove newline necessary to move data;
-
-    # pick up the default arguments we squirreled away earlier
-    my $args = $self->{forks}->{$wheel_id}->{args};
-    $args->{body} = $body;
-
-    $self->say($args);
+sub channel_data {
+  my $self = shift;
+  my $channel = shift or return;
+  return $self->{channel_data}{$channel}
 }
 
-=head2 help
-
-This is the other method that you should override.  This is the text
-that the bot will respond to if someone simply says help to it.  This
-should be considered a special case which you should not attempt to
-process yourself.  Saying help to a bot should have no side effects
-whatsoever apart from returning this text.
-
-=cut
-
-sub help { "Sorry, this bot has no interactive help." }
-
-=head2 connected
-
-An optional method to override, gets called after we have connected
-to the server
-
-=cut
-
-sub connected { undef }
-
-=head1 ACCESS METHODS
+=head1 ATTRIBUTES
 
 Get or set methods.  Changing most of these values when connected
 won't cause sideffects.  e.g. changing the server will not
@@ -580,7 +676,7 @@ The usual way of calling these is as keys to the hash passed to the
 =head2 server
 
 The server we're going to connect to.  Defaults to
-"london.rhizomatic.net".
+"irc.perl.org".
 
 =cut
 
@@ -715,6 +811,18 @@ sub ignore_list {
     @{ $self->{ignore_list} || [] };
 }
 
+=head2 flood
+
+Set to '1' to disable the built-in flood protection of POE::Compoent::IRC
+
+=cut
+
+sub flood {
+    my $self = shift;
+    $self->{flood} = shift if @_;
+    $self->{flood};
+}
+
 =head1 STATES
 
 These are the POE states that we register in order to listen for IRC
@@ -731,8 +839,6 @@ sub start_state {
     my ( $self, $kernel, $session ) = @_[ OBJECT, KERNEL, SESSION ];
     $self->{kernel} = $kernel;
     $self->{session} = $session;
-
-    $self->log("Control session start\n");
 
     # Make an alias for our session, to keep it from getting GC'ed.
     $kernel->alias_set($self->{ALIASNAME});
@@ -770,7 +876,7 @@ $Bot::BasicBot::RECONNECT_TIMEOUT.
 sub reconnect {
     my ( $self, $kernel, $session ) = @_[ OBJECT, KERNEL, SESSION ];
 
-    $self->log("Trying to connect to server.\n");
+    $self->log("Trying to connect to server ".$self->server);
 
     $kernel->call( $self->{IRCNAME}, 'disconnect' );
     $kernel->call( $self->{IRCNAME}, 'shutdown' );
@@ -785,6 +891,7 @@ sub reconnect {
             Port     => $self->port,
             Username => $self->username,
             Ircname  => $self->name,
+            Flood    => $self->flood,
         }
     );
     $kernel->delay('reconnect', $RECONNECT_TIMEOUT);
@@ -798,8 +905,6 @@ Called when we're stopping.  Shutdown the bot correctly.
 
 sub stop_state {
     my ( $self, $kernel ) = @_[ OBJECT, KERNEL ];
-
-    $self->log("Control session stopped.\n");
 
     $kernel->post( $self->{IRCNAME}, 'quit', $self->quit_message );
     $kernel->alias_remove($self->{ALIASNAME});
@@ -816,8 +921,6 @@ We also ignore ourselves.  We don't want to hear what we have to say.
 
 sub irc_001_state {
     my ( $self, $kernel ) = @_[ OBJECT, KERNEL ];
-
-    $self->log("IRC server ready\n");
 
     # ignore all messages from ourselves
     $kernel->post( $self->{IRCNAME}, 'ignore', $self->nick );
@@ -861,7 +964,7 @@ sub irc_error_state {
 
 =head2 irc_kicked_state
 
-Called if we get kicked.  If we're kicked then it's best to do
+Called on kick.  If we're kicked then it's best to do
 nothing.  Bots are normally called in wrapper that restarts them
 if we die, which may end us up in a busy loop.  Anyway, if we're not
 wanted, the best thing to do would be to hang around off channel.
@@ -869,8 +972,11 @@ wanted, the best thing to do would be to hang around off channel.
 =cut
 
 sub irc_kicked_state {
-    my ( $self, $err ) = @_[ OBJECT, ARG0 ];
-    $self->log("Kick ($err)\n");
+    my ($self, $kernel, $heap, $session) = @_[OBJECT, KERNEL, HEAP, SESSION];
+    my ($nickstring, $channel, $kicked, $reason) = @_[ARG0..$#_];
+    my $nick = $self->nick_strip($nickstring);
+    $_[OBJECT]->_remove_from_channel( $channel, $kicked );
+    $self->kicked({ channel => $channel, who => $nick, kicked => $kicked, reason => $reason });
 }
 
 =head2 irc_join_state
@@ -891,6 +997,47 @@ Called if someone changes nick.  Used for nick tracking.
 
 sub irc_nick_state {
     my ( $self, $nick, $newnick ) = @_[ OBJECT, ARG0, ARG1 ];
+    $nick = $self->nick_strip($nick);
+    for my $channel (keys( %{ $self->{channel_data} } )) {
+        $self->{channel_data}{$channel}{$newnick}
+          = delete $self->{channel_data}{$channel}{$nick};
+    }
+    $self->nick_change($nick, $newnick);
+}
+
+=head2 irc_mode_state
+
+=cut
+
+sub irc_mode_state {
+    my ($self, $kernel, $session) = @_[OBJECT, KERNEL, SESSION];
+    my ($nickstring, $channel, $mode, @ops) = @_[ARG0..$#_];
+    my $nick = $self->nick_strip($nickstring);
+    $mode =~ s/^(.)//;
+    my $added = $1 eq '+' ? 1 : 0;
+    my @modes = split(//, $mode);
+    for my $who (@ops) {
+        my $current = $self->{channel_data}{$channel}{$who};
+
+        my $op = shift(@modes);
+
+        if ($added and $op eq 'o') {
+          $current->{op} = 1;
+          $current->{voice} = 0;
+
+        } elsif ($added and $op eq 'v') {
+          $current->{voice} = 1 unless $current->{op};
+
+        } elsif (!$added and $op eq 'o') {
+          $current->{op} = 0;
+          $current->{voice} = 0;
+
+        } elsif (!$added and $op eq 'v') {
+          $current->{voice} = 1 unless $current->{op};
+        }
+
+        $self->{channel_data}{$channel}{$who} = $current;
+    }
 }
 
 =head2 irc_said_state
@@ -974,15 +1121,8 @@ sub irc_received_state {
     $mess->{body} =~ s/^\s+//;
     $mess->{body} =~ s/\s+$//;
 
-    # okay, we got this far.  Better log this.  This needs changing
-    # to a nice format.  Oooh, I could spit out sax events... (mf)
-    #$self->log(
-    #    join('||', $mess->{who}, $mess->{channel}, $mess->{address}, $mess->{body})
-    #    ."\n");
-
     # check if someone was asking for help
     if ( $mess->{address} && ( $mess->{body} =~ /^help/i ) ) {
-        $self->log("Invoking help for '$mess->{who}'\n");
         $mess->{body} = $self->help($mess) or return;
         $self->say($mess);
         return;
@@ -994,7 +1134,7 @@ sub irc_received_state {
     ### what did we get back?
 
     # nothing? Say nothing then
-    return unless defined($return);
+    return unless $return;
 
     # a string?  Say it how we were addressed then
     unless ( ref($return) ) {
@@ -1002,9 +1142,6 @@ sub irc_received_state {
         $self->$respond($mess);
         return;
     }
-
-    # just say what we were handed back
-    $self->$respond($return);
 }
 
 =head2 irc_ping_state
@@ -1033,7 +1170,16 @@ Called if someone joins a channel.
 =cut
 
 sub irc_chanjoin_state {
+    my $self = $_[OBJECT];
     $_[KERNEL]->delay( 'reconnect', $RECONNECT_TIMEOUT );
+    my ($channel, $nick) = @_[ ARG1, ARG0 ];
+    $nick = $_[OBJECT]->nick_strip($nick);
+    if ($self->nick eq $nick) {
+      my @channels = $self->channels;
+      push @channels, $channel unless grep { $_ eq $channel }  @channels;
+      $self->channels(\@channels);
+    }
+    $_[OBJECT]->_add_to_channel( $channel, $nick );
     irc_chan_received_state( 'chanjoin', 'say', @_ );
 }
 
@@ -1044,7 +1190,16 @@ Called if someone parts a channel.
 =cut
 
 sub irc_chanpart_state {
+    my $self = $_[OBJECT];
     $_[KERNEL]->delay( 'reconnect', $RECONNECT_TIMEOUT );
+    my ($channel, $nick) = @_[ ARG1, ARG0 ];
+    $nick = $_[OBJECT]->nick_strip($nick);
+    if ($self->nick eq $nick) {
+      my @channels = $self->channels;
+      @channels = grep { $_ ne $channel } @channels;
+      $self->channels(\@channels);
+    }
+    $_[OBJECT]->_remove_from_channel( $channel, $nick );
     irc_chan_received_state( 'chanpart', 'say', @_ );
 }
 
@@ -1066,24 +1221,17 @@ sub irc_chan_received_state {
 
     $mess->{who} = $self->nick_strip($nick);
 
-    #if it's us (the bot) joining then we need to ignore the join
-    if($mess->{who} eq $self->nick) { return; }
-
     $mess->{channel} = $channel;
     $mess->{body} = $received; #chanjoin or chanpart
     $mess->{address} = "chan";
 
-    #$self->log(
-    #    join('||', $mess->{who}, $mess->{channel}, $mess->{address}, $mess->{body})
-    #    ."\n");
-
     # okay, call the chanjoin/chanpart method
-    $respond = $self->$received($mess);
+    $return = $self->$received($mess);
 
     ### what did we get back?
 
     # nothing? Say nothing then
-    return unless defined($return);
+    return unless $return;
 
     # a string?  Say it how we were addressed then
     unless ( ref($return) ) {
@@ -1091,9 +1239,6 @@ sub irc_chan_received_state {
       $self->$respond($mess);
       return;
     }
-
-    # just say what we were handed back
-    $self->$respond($return);
 }
 
 
@@ -1107,8 +1252,6 @@ from memory.
 
 sub fork_close_state {
     my ( $self, $wheel_id ) = @_[ 0, ARG0 ];
-
-    #warn "received close event from wheel $wheel_id\n";
     delete $self->{forks}->{$wheel_id};
 }
 
@@ -1134,6 +1277,80 @@ sub tick_state {
     my $delay = $self->tick();
     $self->schedule_tick($delay) if $delay;
 }
+
+=head2 names_state
+
+=cut
+
+sub names_state {
+  my ($self, $kernel, $server, $message) = @_[OBJECT, KERNEL, ARG0, ARG1];
+  my (undef, $channel, @names) = split(/\s/, $message);
+  $names[0] =~ s/^\://; # FFS
+
+  # while we get names responses, build an 'in progress' list of people.
+  my $building = $self->{building_channel_data}{$channel} ||= {};
+
+  for my $nick (@names) {
+    my ($op, $voice);
+    $op = ($nick =~ s/^@//) ? 1 : 0;
+    $voice = ($nick =~ s/^\+//) ? 1 : 0;
+    $building->{$nick} = {
+      op => $op,
+      voice => $voice,
+    }
+  }
+}
+
+=head2 names_done_state
+
+=cut
+
+sub names_done_state {
+  my ($self, $kernel, $server, $message) = @_[OBJECT, KERNEL, ARG0, ARG1];
+  my ($channel) = split(/\s/, $message);
+
+  # we have the complete list of names in the channel. Remove the 'in progress'
+  # list, and put it as the definitive 'list of people'.
+  my $built = delete $self->{building_channel_data}{$channel};
+  return unless $built;
+  $self->{channel_data}{$channel} = $built;
+  $self->names({ channel => $channel, names => $built });
+}
+
+
+sub _add_to_channel {
+  my ($self, $channel, $nick, $ops) = @_;
+  $ops ||= { op => 0, voice => 0 };
+  $self->{channel_data}{$channel}{$nick} = $ops;
+}
+
+sub _remove_from_channel {
+  my ($self, $channel, $nick) = @_;
+  delete $self->{channel_data}{$channel}{$nick};
+}
+
+=head2 topic_raw_state
+
+=cut
+
+sub topic_raw_state {
+  my ($self, $kernel, $server, $raw) = @_[OBJECT, KERNEL, ARG0, ARG1];
+  my ($channel, $topic) = split(/ :/, $raw, 2);
+  $self->topic({ channel => $channel, who => undef, topic => $topic });
+}
+
+=head2 topic_state
+
+=cut
+
+sub topic_state {
+  my ($self, $kernel, $nickraw, $channel, $topic)
+    = @_[OBJECT, KERNEL, ARG0, ARG1, ARG2];
+  my $nick = $self->nick_strip($nickraw);
+  $self->topic({ channel => $channel, who => $nick, topic => $topic });
+}
+
+
 
 =head1 OTHER METHODS
 
@@ -1177,7 +1394,7 @@ sub log {
 =head2 ignore_nick($nick)
 
 Return true if this nick should be ignored.  Ignores anything in
-the ignore list or with a nick ending in "bot".
+the ignore list
 
 =cut
 
@@ -1197,7 +1414,7 @@ returns just the nick
 
 sub nick_strip {
     my $self = shift;
-    my $combined = shift;
+    my $combined = shift || "";
     my ($nick) = $combined =~ m/(.*?)!/;
 
     return $nick;

@@ -4,10 +4,13 @@ examples/countdownbot.pl
 examples/cpanbot.pl
 examples/namer.pl
 examples/tailbot.pl
+examples/tango.pl
 lib/Bot/BasicBot.pm
 Makefile.PL
-MANIFEST
+MANIFEST			This list of files
 META.yml
 NINJA
 README
 t/00bootstrap.t
+t/connect.t
+t/lib/TestBot.pm

@@ -11,16 +11,22 @@ from the fbi bot by richardc, tails a file called 'logfile' to the channel
 
 =cut
 
+use warnings;
 use strict;
+
+package TailBot;
 use base 'Bot::BasicBot';
+
+my $channel = '#tailbot';
 
 sub connected {
     my $self = shift;
-
-    # voodoo
-    $self->forkit({ channel => '#tailbot',
-                    run     => [ qw ( /usr/bin/tail -f logfile ) ] });
+    $self->forkit({ channel => $channel,
+                    run     => [ qw( /usr/bin/tail -f logfile ) ],
+                 });
 }
 
-main->new(nick => 'tailbot',
-          channels => ['#tailbot'])->run;
+package main;
+
+TailBot->new(nick => 'tailbot', channels => [ $channel ])
+       ->run;
