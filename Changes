@@ -10,3 +10,12 @@ Changes to 0.25 (released 31st August 2003) no available.
   - Made reconnect timeout changable
   - Added a NINJA
 
+0.31 2004/01/16
+  - Fixed 'addressing' typo, thanks Earle
+  - Fixed annoying errors for logging
+  - Fixed stupid bug where the return value of said wasn't getting said.
+    How can I not have noticed?
+  - if you don't return true from init, be more helpful.
+  - if help doesn't return true, don't say anything
+  - Made SYNOPSIS clearer
+

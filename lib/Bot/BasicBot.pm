@@ -5,21 +5,24 @@ Bot::BasicBot - simple irc bot baseclass
 =head1 SYNOPSIS
 
   # with all defaults
-  Bot::BasicBot->new( channels => ["#bottest"] )->run();
+  my $bot = Bot::BasicBot->new( channels => ["#bottest"] );
+  $bot->run();
 
   # with all known options
-  Bot::BasicBot->new( channels => ["#bottest"],
+  my $bot = Bot::BasicBot->new( channels => ["#bottest"],
 
-                      server => "irc.example.com",
-                      port   => "6667",
+                           server => "irc.example.com",
+                           port   => "6667",
 
-                      nick      => "basicbot",
-                      alt_nicks => ["bbot", "simplebot"],
-                      username  => "bot",
-                      name      => "Yet Another Bot",
+                           nick      => "basicbot",
+                           alt_nicks => ["bbot", "simplebot"],
+                           username  => "bot",
+                           name      => "Yet Another Bot",
 
-                      ignore_list => [qw(dipsy dadadodo laotse)],
-                )->run();
+                           ignore_list => [qw(dipsy dadadodo laotse)],
+                         );
+  $bot->run();
+
 
 =head1 DESCRIPTION
 
@@ -48,7 +51,7 @@ use POE::Wheel::Run;
 use POE::Filter::Line;
 use POE::Component::IRC;
 
-our $VERSION = 0.30;
+our $VERSION = 0.31;
 
 use base qw( Exporter );
 our @EXPORT  = qw( say emote );
@@ -59,11 +62,12 @@ our $RECONNECT_TIMEOUT = 500;
 
 Creates a new instance of the class.  Name value pairs may be passed
 which will have the same effect as calling the method of that name
-with the value supplied.
+with the value supplied. Returns a Bot::BasicBot object, that you can
+call 'run' on later.
 
 eg:
 
-  Bot::BasicBot->new( nick => 'superbot', channels => [ '#superheroes' ] );
+  my $bot = Bot::BasicBot->new( nick => 'superbot', channels => [ '#superheroes' ] );
 
 =cut
 
@@ -85,7 +89,7 @@ sub new {
         }
     }
 
-    $self->init or return undef;
+    $self->init or die "init did not return a true value - dying";
 
     return $self;
 }
@@ -94,7 +98,7 @@ sub new {
 
 called when the bot is created, as part of new(). Override to provide
 your own init. Return a true value for a successful init, or undef if
-you failed, in which case new() will return undef.
+you failed, in which case new() will die.
 
 =cut
 
@@ -953,12 +957,16 @@ sub irc_received_state {
     $mess->{body} = $body;
     unless ( $mess->{channel} eq "msg" ) {
         my $nick = $self->nick;
-        ( $mess->{address} ) = $mess->{body} =~ s/^(\Q$nick\E\s*[:,-]?)//;
+
+        if ( $mess->{body} =~ s/^(\Q$nick\E)\s*[:,-]?\s*// ) {
+          $mess->{address} = $1;
+        }
 
         foreach $nick ( $self->alt_nicks ) {
-            last if $self->{address};
-
-            ( $mess->{address} ) = $mess->{body} =~ s/^(\Q$nick\E\s*[:,-])//;
+            last if $mess->{address};
+            if ( $mess->{body} =~ s/^(\Q$nick\E)\s*[:,-]?\s*// ) {
+              $mess->{address} = $1;
+            }
         }
     }
 
@@ -975,13 +983,13 @@ sub irc_received_state {
     # check if someone was asking for help
     if ( $mess->{address} && ( $mess->{body} =~ /^help/i ) ) {
         $self->log("Invoking help for '$mess->{who}'\n");
-        $mess->{body} = $self->help($mess);
+        $mess->{body} = $self->help($mess) or return;
         $self->say($mess);
         return;
     }
 
     # okay, call the said/emoted method
-    $respond = $self->$received($mess);
+    $return = $self->$received($mess);
 
     ### what did we get back?
 
@@ -1160,8 +1168,9 @@ logging, override this method - it will have simple text strings passed in
 sub log {
     my $self = shift;
     for (@_) {
-      chomp;
-      print STDERR "$_\n";
+      my $log_entry = $_;
+      chomp $log_entry;
+      print STDERR "$log_entry\n";
     }
 }
 

@@ -1,4 +1,3 @@
-Build
 Build.PL
 Changes
 examples/countdownbot.pl
@@ -12,4 +11,3 @@ META.yml
 NINJA
 README
 t/00bootstrap.t
-t/99coverage.t

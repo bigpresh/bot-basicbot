@@ -1,18 +1,16 @@
 --- #YAML:1.0
 name: Bot-BasicBot
-version: 0.3
+version: 0.31
+author:
+  - Tom Insam E<lt>tom@jerakeen.orgE<gt>
+abstract: simple irc bot baseclass
 license: perl
-distribution_type: module
 requires:
   POE: 0.22
   POE::Component::IRC: 2
-  Pod::Coverage: 0.01
   Test::More: 0.01
-recommends: {}
-build_requires: {}
-conflicts: {}
 provides:
   Bot::BasicBot:
     file: lib/Bot/BasicBot.pm
-    version: 0.3
-generated_by: Module::Build version 0.21
+    version: 0.31
+generated_by: Module::Build version 0.24
