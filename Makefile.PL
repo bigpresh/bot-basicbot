@@ -1,7 +1,7 @@
     use ExtUtils::MakeMaker;
     WriteMakefile
       ('DISTNAME' => 'Bot-BasicBot',
-       'VERSION' => '0.2',
+       'VERSION' => '0.21',
        'PL_FILES' => {},
        'PREREQ_PM' => {
 			'Pod::Coverage' => '0',

@@ -13,7 +13,7 @@ use POE::Component::IRC;
 use constant IRCNAME   => "wanna";
 use constant ALIASNAME => "pony";
 
-our $VERSION = 0.2;
+our $VERSION = 0.21;
 
 use vars qw(@ISA @EXPORT);
 @ISA    = qw(Exporter);
@@ -40,7 +40,7 @@ Bot::BasicBot - simple irc bot baseclass
                       name      => "Yet Another Bot",
 
                       ignore_list => [qw(dipsy dadadodo laotse)],
-                );
+                )->run();
 
 =head1 DESCRIPTION
 
@@ -219,12 +219,34 @@ sub chanpart { undef }
 
 =head2 tick()
 
-This is an event called every 5 seconds, where you can check for anything
-interesting having happened recently. Override it in your class.
+This is an event called every regularly. The function should return the
+amount of time untill the tick event should next be called. The default
+tick is called 5 seconds after the bot starts, and the default
+implementation returns '0', which disables the tick. Override this and
+return non-zero values to have an ongoing tick event.
+
+Call the C<schedule_tick> event to schedule a tick event without waiting
+for the next tick.
 
 =cut
 
-sub tick { undef }
+sub tick { return 0; }
+
+=head2 schedule_tick(time)
+
+Causes the C<tick> event to be called in 'time' seconds (or 5 seconds if
+time is left unspecified). Note that if the tick event is due to be
+called already, this will override it, you can't schedule multiple
+future events with this funtction.
+
+=cut
+
+sub schedule_tick {
+  my $self = shift;
+  my $time = shift || 5;
+  $self->{kernel}->delay( tick => $time );
+  
+}
 
 =head2 forkit
 
@@ -663,6 +685,8 @@ Called when we start.  Used to fire a "connect to irc server event"
 
 sub start_state {
     my ( $this, $kernel, $session ) = @_[ OBJECT, KERNEL, SESSION ];
+    $this->{kernel} = $kernel;
+    $this->{session} = $session;
 
     $this->log("Control session start\n");
 
@@ -1047,14 +1071,15 @@ sub fork_error_state { }
 
 =head2 tick_state
 
-the POE state for the tick event. Called every 5 seconds.
+the POE state for the tick event. Reschedules a tick event for the future
+if the tick method returned a value.
 
 =cut
 
 sub tick_state {
     my ( $this, $kernel, $heap ) = @_[ OBJECT, KERNEL, HEAP ];
-    $kernel->delay( tick => 5 );
-    $this->tick();
+    my $delay = $this->tick();
+    $this->schedule_tick($delay) if $delay;
 }
 
 =head1 OTHER METHODS
@@ -1144,8 +1169,9 @@ AUTOLOAD stuff, better interactive help, and a few API tidies.
 Maintainership for a while was in the hands of Simon Kent
 E<lt>simon@hitherto.netE<gt>. Don't know what he did. :-)
 
-I recieved patched for tracking joins and parts from Silver, sat on
-them for two months, and have finally applied them. Thanks, dude.
+I recieved patches for tracking joins and parts from Silver, sat on
+them for two months, and have finally applied them. Thanks, dude. He also
+sent me changes for the tick event API, which made sense.
 
 =head1 SYSTEM REQUIREMENTS
 

@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name: Bot-BasicBot
-version: 0.2
+version: 0.21
 license: perl
 distribution_type: module
 requires:
@@ -15,5 +15,5 @@ conflicts: {}
 provides:
   Bot::BasicBot:
     file: lib/Bot/BasicBot.pm
-    version: 0.2
+    version: 0.21
 generated_by: Module::Build version 0.19
