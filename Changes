@@ -1,0 +1,12 @@
+Revision history for Perl extension Bot::BasicBot::Pluggable.
+
+Changes to 0.25 (released 31st August 2003) no available.
+
+0.30 2003/01/02
+  - Randomized name so you can run more than one at once in one POE session
+  - Log a lot less.
+  - Be more aggressive about reconnecting to the server
+  - Put reconnect stand-offs into a lot more places, so we get less confused.
+  - Made reconnect timeout changable
+  - Added a NINJA
+

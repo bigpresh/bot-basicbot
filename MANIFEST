@@ -1,9 +1,15 @@
+Build
 Build.PL
-Makefile.PL
-META.yml
-MANIFEST			This list of files
-README
+Changes
+examples/countdownbot.pl
+examples/cpanbot.pl
+examples/namer.pl
 examples/tailbot.pl
 lib/Bot/BasicBot.pm
+Makefile.PL
+MANIFEST
+META.yml
+NINJA
+README
 t/00bootstrap.t
 t/99coverage.t
