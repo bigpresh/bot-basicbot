@@ -1,7 +1,9 @@
-BasicBot.pm
-Changes
+Build.PL
 Makefile.PL
-MANIFEST
+META.yml
+MANIFEST			This list of files
 README
-test.pl
 examples/tailbot.pl
+lib/Bot/BasicBot.pm
+t/00bootstrap.t
+t/99coverage.t

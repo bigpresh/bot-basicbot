@@ -1,6 +1,7 @@
 package Bot::BasicBot;
 
 use strict;
+use warnings::register;
 use Carp;
 use Exporter;
 use POE::Kernel;
@@ -12,7 +13,7 @@ use POE::Component::IRC;
 use constant IRCNAME   => "wanna";
 use constant ALIASNAME => "pony";
 
-$Bot::BasicBot::VERSION = 0.05;
+our $VERSION = 0.2;
 
 use vars qw(@ISA @EXPORT);
 @ISA    = qw(Exporter);
@@ -39,12 +40,6 @@ Bot::BasicBot - simple irc bot baseclass
                       name      => "Yet Another Bot",
 
                       ignore_list => [qw(dipsy dadadodo laotse)],
-
-                      store =>
-                      Bot::Store::Simple->new(filename => "store.file"),
-
-                      log   =>
-                      Bot::Log::Simple->new(filename => "log.file"),
                 );
 
 =head1 DESCRIPTION
@@ -52,15 +47,17 @@ Bot::BasicBot - simple irc bot baseclass
 Basic bot system designed to make it easy to do simple bots, optionally
 forking longer processes (like searches) concurrently in the background.
 
-=head2 Main Methods
+=head1 METHODS
 
-=over 4
-
-=item new
+=head2 new( key => value, .. )
 
 Creates a new instance of the class.  Name value pairs may be passed
 which will have the same effect as calling the method of that name
 with the value supplied.
+
+eg:
+
+  Bot::BasicBot->new( nick => 'superbot', channels => [ '#superheroes' ] );
 
 =cut
 
@@ -83,7 +80,7 @@ sub new {
     return $this;
 }
 
-=item run
+=head2 run()
 
 Runs the bot.  Hands the control over to the POE core.
 
@@ -103,18 +100,23 @@ sub run {
                 _start => "start_state",
                 _stop  => "stop_state",
 
-                irc_001         => "irc_001_state",
-                irc_msg         => "irc_said_state",
-                irc_public      => "irc_said_state",
-                irc_ctcp_action => "irc_emoted_state",
-                irc_ping        => "irc_ping_state",
-                reconnect       => "reconnect",
+                irc_001          => "irc_001_state",
+                irc_msg          => "irc_said_state",
+                irc_public       => "irc_said_state",
+                irc_ctcp_action  => "irc_emoted_state",
+                irc_ping         => "irc_ping_state",
+                reconnect        => "reconnect",
 
                 irc_disconnected => "irc_disconnected_state",
                 irc_error        => "irc_error_state",
 
+                irc_join         => "irc_chanjoin_state",
+                irc_part         => "irc_chanpart_state",
+
                 fork_close => "fork_close_state",
-                fork_error => "fork_error_state"
+                fork_error => "fork_error_state",
+                
+                tick => "tick_state",
             }
         ]
     );
@@ -126,16 +128,15 @@ sub run {
     $poe_kernel->run();
 }
 
-=item said($args)
+=head2 said($args)
 
 This is the main method that you'll want to override in your subclass -
 it's the one called by default whenever someone says anything that we
 can hear, either in a public channel or to us in private that we
 shouldn't ignore.
 
-You'll be passed a reference to a hash that contains the arguments
-described below.  Feel free to alter the values of this hash - it
-won't be used later on.
+You'll be passed a hashref hat contains the arguments described below. 
+Feel free to alter the values of this hash - it won't be used later on.
 
 =over 4
 
@@ -172,26 +173,60 @@ the body and returning the structure you were passed works very well.)
 
 Returning undef will cause nothing to be said.
 
-=item emoted
+=cut
 
-This is a secondary method that you may wish to override. In its
-default configuration, it will simply pass anything emoted on channel
-through to the C<said> handler.
+sub said { undef }
+
+=head2 emoted($args)
+
+This is a secondary method that you may wish to override. It gets called
+when someone in channel 'emotes', instead of talking. In its default
+configuration, it will simply pass anything emoted on channel through to
+the C<said> handler.
 
 C<emoted> receives the same data hash as C<said>.
 
 =cut
 
-# do nothing implementation
-sub said { undef }
-
-# default emoted will pass through to "said"
 sub emoted {
-    my ( $self, $emoted_hashref ) = @_;
-    $self->said($emoted_hashref);
+    shift->said(@_);
 }
 
-=item forkit
+=head2 chanjoin($mess)
+
+Called when someone joins a channel. $mess is an object similar to a
+said() message, $mess->{who} is the nick of the user who joined,
+$mess->{channel} is the channel they joined.
+
+This is a do-nothing implementation, override this in your subclass.
+
+=cut
+
+sub chanjoin { undef }
+
+=head2 chanpart($mess)
+
+Called when someone leaves a channel. $mess is an object similar to a
+said() message, $mess->{who} is the nick of the user who left,
+$mess->{channel} is the channel they left.
+
+This is a do-nothing implementation, override this in your subclass.
+
+=cut
+
+sub chanpart { undef }
+
+
+=head2 tick()
+
+This is an event called every 5 seconds, where you can check for anything
+interesting having happened recently. Override it in your class.
+
+=cut
+
+sub tick { undef }
+
+=head2 forkit
 
 This method allows you to fork arbitrary background processes. They
 will run concurrently with the main bot, returning their output to a
@@ -257,11 +292,11 @@ routine to pick them up and make sense of them.
 sub forkit {
     my $this = shift;
     my $args;
-    if ( $#_ > 1 ) {
+    if (ref($_[0])) {
+        $args = shift;
+    } else {
         my %args = @_;
         $args = \%args;
-    } else {
-        $args = shift;
     }
 
     return undef unless $args->{run};
@@ -275,8 +310,7 @@ sub forkit {
 
     my $run;
     if ( ref( $args->{run} ) =~ /^CODE/ ) {
-        $run =
-          sub { &{ $args->{run} }( $args->{body}, @{ $args->{arguments} } ) };
+        $run = sub { &{ $args->{run} }( $args->{body}, @{ $args->{arguments} } ) };
     } else {
         $run = $args->{run};
     }
@@ -303,7 +337,7 @@ sub forkit {
     return undef;
 }
 
-=item say
+=head2 say( key => value, .. )
 
 Say something to someone.  You should pass the following arguments:
 
@@ -330,11 +364,6 @@ text if this message is going to a pulbic forum.
 
 =back
 
-C<say> automatically calls c<cannonical_nick> to resolve nicks to
-the current nick for someone, so even if they've changed their nick
-when you say something it should (assuming POE gets round to sending
-it in time) be sent to the right person.
-
 You can also make non-OO calls to C<say>, which will be interpreted as
 coming from a process spawned by C<forkit>. The routine will serialise
 any data it is sent, and throw it to STDOUT, where POE::Wheel::Run can
@@ -356,11 +385,11 @@ sub say {
 
     my $this = shift;
     my $args;
-    if ( $#_ > 1 ) {
+    if (ref($_[0])) {
+        $args = shift;
+    } else {
         my %args = @_;
         $args = \%args;
-    } else {
-        $args = shift;
     }
 
     my $body = $args->{body};
@@ -382,10 +411,11 @@ sub say {
     $poe_kernel->post( IRCNAME, 'privmsg', $who, $body );
 }
 
-=item emote
+=head2 emote( key => value, .. )
 
-C<emote> will return data to channel, but emoted (as if you'd said
-"/me writes a spiffy new bot" in most clients). It takes the same arguments as C<say>, listed above.
+C<emote> will return data to channel, but emoted (as if you'd said "/me
+writes a spiffy new bot" in most clients). It takes the same arguments
+as C<say>, listed above.
 
 =cut
 
@@ -404,11 +434,11 @@ sub emote {
 
     my $this = shift;
     my $args;
-    if ( $#_ > 1 ) {
+    if (ref($_[0])) {
+        $args = shift;
+    } else {
         my %args = @_;
         $args = \%args;
-    } else {
-        $args = shift;
     }
 
     my $body = $args->{body};
@@ -426,7 +456,7 @@ sub emote {
     $poe_kernel->post( IRCNAME, 'privmsg', $who, "\cAACTION " . $body . "\cA" );
 }
 
-=item fork_said
+=head2 fork_said
 
 C<fork_said> is really an internal method, the default handler
 for output from a process forked by C<forkit>. It actually takes
@@ -448,19 +478,19 @@ sub fork_said {
     $this->say($args);
 }
 
-=item help
+=head2 help
 
 This is the other method that you should override.  This is the text
 that the bot will respond to if someone simply says help to it.  This
-should be considered a special case which you should not attempt
-to process yourself.  Saying help to a bot should have no side effects
+should be considered a special case which you should not attempt to
+process yourself.  Saying help to a bot should have no side effects
 whatsoever apart from returning this text.
 
 =cut
 
 sub help { "Sorry, this bot has no interactive help." }
 
-=item connected
+=head2 connected
 
 An optional method to override, gets called after we have connected
 to the server
@@ -469,9 +499,7 @@ to the server
 
 sub connected { undef }
 
-=back
-
-=head2 Access Methods
+=head1 ACCESS METHODS
 
 Get or set methods.  Changing most of these values when connected
 won't cause sideffects.  e.g. changing the server will not
@@ -480,7 +508,10 @@ cause a disconnect and a reconnect to another server.
 Attributes that accept multiple values always return lists and
 either accept an arrayref or a complete list as an argument.
 
-=item server
+The usual way of calling these is as keys to the hash passed to the
+'new' method.
+
+=head2 server
 
 The server we're going to connect to.  Defaults to
 "london.rhizomatic.net".
@@ -493,7 +524,7 @@ sub server {
     return $this->{server} || "london.rhizomatic.net";
 }
 
-=item port
+=head2 port
 
 The port we're going to use.  Defaults to "6667"
 
@@ -505,7 +536,7 @@ sub port {
     return $this->{port} || "6667";
 }
 
-=item nick
+=head2 nick
 
 The nick we're going to use.  Defaults to five random letters
 and numbers followed by the word "bot"
@@ -523,7 +554,7 @@ sub _random_nick {
     return join '', ( map { @things[ rand @things ] } 0 .. 4 ), "bot";
 }
 
-=item alt_nicks
+=head2 alt_nicks
 
 Alternate nicks that this bot will be known by.  These are not nicks
 that the bot will try if it's main nick is taken, but rather other
@@ -545,7 +576,7 @@ sub alt_nicks {
     @{ $this->{alt_nicks} || [] };
 }
 
-=item username
+=head2 username
 
 The username we'll claim to have at our ip/domain.  By default this
 will be the same as our nick.
@@ -558,7 +589,7 @@ sub username {
     $this->{username} or $this->nick;
 }
 
-=item name
+=head2 name
 
 The name that the bot will identify itself as.  Defaults to
 "$nick bot" where $nick is the nick that the bot uses.
@@ -571,7 +602,7 @@ sub name {
     $_[0]->{name} or $this->nick . " bot";
 }
 
-=item channels
+=head2 channels
 
 The channels we're going to connect to.
 
@@ -588,7 +619,7 @@ sub channels {
     @{ $this->{channels} || [] };
 }
 
-=item quit_message
+=head2 quit_message
 
 The quit message.  Defaults to "Bye".
 
@@ -600,7 +631,7 @@ sub quit_message {
     defined( $this->{quit_message} ) ? $this->{quit_message} : "Bye";
 }
 
-=item ignore_list
+=head2 ignore_list
 
 The list of irc nicks to ignore B<public> messages from (normally
 other bots.)  Useful for stopping bot cascades.
@@ -618,14 +649,13 @@ sub ignore_list {
     @{ $this->{ignore_list} || [] };
 }
 
-=head2 States
+=head1 STATES
 
-These are the POE states that we register in order to listen
-for IRC events.
+These are the POE states that we register in order to listen for IRC
+events. For the most part you don't need to worry about these, unless
+you want to override them to do something clever.
 
-=over 4
-
-=item start_state
+=head2 start_state
 
 Called when we start.  Used to fire a "connect to irc server event"
 
@@ -657,7 +687,23 @@ sub start_state {
     );
     $kernel->delay('reconnect', 500);
 
+    $kernel->delay('tick', 5);
 }
+
+=head2 reconnect
+
+in an ideal world, this will never get called - we schedule it for 500
+seconds in the future, and whenever we see a server ping we reset this
+counter again. This means that it'll get run if we haven't seen anything
+from the server for a while, so we can assume that something bad has
+happened. At that point we shotgun the IRC session and restart
+everything, so we reconnect to the server.
+
+This is by far the most reliable way I have found of ensuring that a bot
+will reconnect to a server after it's lost a network connection for some
+reason.
+
+=cut
 
 sub reconnect {
     my ( $this, $kernel, $session ) = @_[ OBJECT, KERNEL, SESSION ];
@@ -682,7 +728,7 @@ sub reconnect {
     $kernel->delay('reconnect', 500);
 }
 
-=item stop_state
+=head2 stop_state
 
 Called when we're stopping.  Shutdown the bot correctly.
 
@@ -697,7 +743,7 @@ sub stop_state {
     $kernel->alias_remove(ALIASNAME);
 }
 
-=item irc_001_state
+=head2 irc_001_state
 
 Called when we connect to the irc server.  This is used to tell
 the irc server that we'd quite like to join the channels.
@@ -723,7 +769,7 @@ sub irc_001_state {
     $this->connected();
 }
 
-=item irc_disconnected_state
+=head2 irc_disconnected_state
 
 Called if we are disconnected from the server.  Logs the error and
 then dies.
@@ -737,7 +783,7 @@ sub irc_disconnected_state {
     #  die "IRC Disconnect: $server";
 }
 
-=item irc_error_state
+=head2 irc_error_state
 
 Called if there is an irc server error.  Logs the error and then dies.
 
@@ -750,7 +796,7 @@ sub irc_error_state {
     #  die "IRC Error: $err";
 }
 
-=item irc_kicked_state
+=head2 irc_kicked_state
 
 Called if we get kicked.  If we're kicked then it's best to do
 nothing.  Bots are normally called in wrapper that restarts them
@@ -763,7 +809,7 @@ sub irc_kicked_state {
     my ( $this, $err ) = @_[ OBJECT, ARG0 ];
 }
 
-=item irc_join_state
+=head2 irc_join_state
 
 Called if someone joins.  Used for nick tracking
 
@@ -773,9 +819,9 @@ sub irc_join_state {
     my ( $this, $nick ) = @_[ OBJECT, ARG0 ];
 }
 
-=item irc_nick_state
+=head2 irc_nick_state
 
-Called if someone changes nick.  Used for nick tracking
+Called if someone changes nick.  Used for nick tracking.
 
 =cut
 
@@ -783,7 +829,7 @@ sub irc_nick_state {
     my ( $this, $nick, $newnick ) = @_[ OBJECT, ARG0, ARG1 ];
 }
 
-=item irc_said_state
+=head2 irc_said_state
 
 Called if we recieve a private or public message.  This
 formats it into a nicer format and calls 'said'
@@ -794,7 +840,7 @@ sub irc_said_state {
     irc_received_state( 'said', 'say', @_ );
 }
 
-=item irc_emoted_state
+=head2 irc_emoted_state
 
 Called if someone "emotes" on channel, rather than directly saying
 something. Currently passes the emote striaght to C<irc_said_state>
@@ -806,7 +852,7 @@ sub irc_emoted_state {
     irc_received_state( 'emoted', 'emote', @_ );
 }
 
-=item irc_received_state
+=head2 irc_received_state
 
 Called by C<irc_said_state> and C<irc_emoted_state> in order to format
 channel input into a more copable-with format.
@@ -891,7 +937,7 @@ sub irc_received_state {
     $this->$respond($return);
 }
 
-=item irc_ping_state
+=head2 irc_ping_state
 
 The most reliable way I've found of doing auto-server-rejoin is to listen for
 pings. Every ping we get, we put off rejoining the server for another few mins.
@@ -905,7 +951,76 @@ sub irc_ping_state {
     $kernel->delay( 'reconnect', 500 );
 }
 
-=item fork_close_state
+=head2 irc_chanjoin_state
+
+Called if someone joins a channel.
+
+=cut
+
+sub irc_chanjoin_state {
+    irc_chan_received_state( 'chanjoin', 'say', @_ );
+}
+
+=head2 irc_chanpart_state
+
+Called if someone parts a channel.
+
+=cut
+
+sub irc_chanpart_state {
+    irc_chan_received_state( 'chanpart', 'say', @_ );
+}
+
+=head2 irc_chan_received_state
+
+Called by C<irc_chanjoin_state> and C<irc_chanpart_state> in order to format
+channel joins and parts into a more copable-with format.
+
+=cut
+
+sub irc_chan_received_state {
+    my $received = shift;
+    my $respond  = shift;
+    my ( $this, $nick, $channel ) = @_[ OBJECT, ARG0, ARG1 ];
+
+    my $return;
+
+    my $mess = {};
+
+    $mess->{who} = $this->nick_strip($nick);
+
+    #if it's us (the bot) joining then we need to ignore the join
+    if($mess->{who} eq $this->nick) { return; }
+
+    $mess->{channel} = $channel;
+    $mess->{body} = $received; #chanjoin or chanpart
+    $mess->{address} = "chan";
+
+    $this->log(
+        join('||', $mess->{who}, $mess->{channel}, $mess->{address}, $mess->{body})
+        ."\n");
+
+    # okay, call the chanjoin/chanpart method
+    $respond = $this->$received($mess);
+
+    ### what did we get back?
+
+    # nothing? Say nothing then
+    return unless defined($return);
+
+    # a string?  Say it how we were addressed then
+    unless ( ref($return) ) {
+      $mess->{body} = $return;
+      $this->$respond($mess);
+      return;
+    }
+
+    # just say what we were handed back
+    $this->$respond($return);
+}
+
+
+=head2 fork_close_state
 
 Called whenever a process forked by C<POE::Wheel::Run> (in C<forkit>)
 terminates, and allows us to delete the object and associated data
@@ -920,7 +1035,7 @@ sub fork_close_state {
     delete $this->{forks}->{$wheel_id};
 }
 
-=item fork_error_state
+=head2 fork_error_state
 
 Called if a process forked by C<POE::Wheel::Run> (in C<forkit>) hits
 an error condition for any reason. Does nothing, but can be overloaded
@@ -930,9 +1045,21 @@ in derived classes to be more useful
 
 sub fork_error_state { }
 
-=back
+=head2 tick_state
 
-=head2 Other States
+the POE state for the tick event. Called every 5 seconds.
+
+=cut
+
+sub tick_state {
+    my ( $this, $kernel, $heap ) = @_[ OBJECT, KERNEL, HEAP ];
+    $kernel->delay( tick => 5 );
+    $this->tick();
+}
+
+=head1 OTHER METHODS
+
+=head2 AUTOLOAD
 
 Bot::BasicBot implements AUTOLOAD for sending arbitrary states to the
 underlying POE::Component::IRC compoment. So for a $bot object, sending
@@ -952,74 +1079,23 @@ sub AUTOLOAD {
     $poe_kernel->post( IRCNAME, $AUTOLOAD, @_ );
 }
 
-=head2 Methods
+=head2 log
 
-=over 4
-
-=item log
-
-Logs the message.  Calls the logging module if one was initilised,
-otherwise simple prints the message to STDERR.
+Logs the message. Simply prints the message to STDERR - override it if
+you want something smarter.
 
 =cut
 
 sub log {
     my $this = shift;
-    my $text = shift;
-
-    if ( $this->{log} ) {
-        $this->{log}->log( time . " $text" );
-    } else {
-        print STDERR $text;
+    for (@_) {
+        my $t = $_;
+        chomp $t;
+        print STDERR $t."\n";
     }
 }
 
-=item get($key) or get($storename, $key)
-
-Gets the key from the store.  Uses the store module loaded if
-initilised, otherwise uses an internal hash.  By default
-uses the "main" store.
-
-=cut
-
-sub get {
-    my $this      = shift;
-    my $key       = pop;
-    my $storename = pop || "main";
-
-    if ( $this->{store} ) {
-        return $this->{store}->get( $storename, $key );
-    } elsif ( $this->{tempstore}{$storename} ) {
-        $this->{tempstore}{$storename}{$key};
-    } else {
-        return undef;
-    }
-}
-
-=item set($key, $value) or set($storename, $key, $value)
-
-Sets the key in the store.  Uses the store module loaded if
-initilised, otherwise uses an internal hash.
-
-=cut
-
-sub set {
-    my $this      = shift;
-    my $value     = pop;
-    my $key       = pop;
-    my $storename = pop || "main";
-
-    if ( $this->{store} ) {
-        return $this->{store}->get( $storename, $key );
-    }
-
-    $this->{tempstore}{$storename} = {}
-      unless ( $this->{tempstore}{$storename} );
-
-    $this->{tempstore}{$storename}{$key} = $value;
-}
-
-=item ignore_nick($nick)
+=head2 ignore_nick($nick)
 
 Return true if this nick should be ignored.  Ignores anything in
 the ignore list or with a nick ending in "bot".
@@ -1033,7 +1109,7 @@ sub ignore_nick {
     return grep { $nick eq $_ } @{ $this->{ignore_list} };
 }
 
-=item nick_strip
+=head2 nick_strip
 
 Takes a nick and hostname (of the form "nick!hostname") and
 returns just the nick
@@ -1047,8 +1123,6 @@ sub nick_strip {
 
     return $nick;
 }
-
-=back
 
 =head1 AUTHOR
 
@@ -1070,6 +1144,9 @@ AUTOLOAD stuff, better interactive help, and a few API tidies.
 Maintainership for a while was in the hands of Simon Kent
 E<lt>simon@hitherto.netE<gt>. Don't know what he did. :-)
 
+I recieved patched for tracking joins and parts from Silver, sat on
+them for two months, and have finally applied them. Thanks, dude.
+
 =head1 SYSTEM REQUIREMENTS
 
 Bot::BasicBot is based on POE, and really needs the latest version as
@@ -1089,7 +1166,7 @@ looks untidy.
 
 Don't call your bot "0".
 
-Nick tracking blatantly doesn't work yet.  In Progress.
+Nick tracking blatantly doesn't work yet. In Progress.
 
 C<fork_error_state> handlers sometimes seem to cause the bot to
 segfault. I'm not yet sure if this is a POE::Wheel::Run problem, or a

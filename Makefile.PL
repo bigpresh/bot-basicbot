@@ -1,12 +1,13 @@
-use ExtUtils::MakeMaker;
-# See lib/ExtUtils/MakeMaker.pm for details of how to influence
-# the contents of the Makefile that is written.
-WriteMakefile(
-    'NAME'              => 'Bot::BasicBot',
-    'VERSION_FROM'      => 'BasicBot.pm', # finds $VERSION
-    'PREREQ_PM'         => { POE                 => 0.22 ,
-                             POE::Component::IRC => 2}, # e.g., Module::Name => 1.1
-    ($] >= 5.005 ?    ## Add these new keywords supported since 5.005
-      (ABSTRACT_FROM => 'BasicBot.pm', # retrieve abstract from module
-       AUTHOR     => 'Simon Batistoni <simon@hitherto.net>') : ()),
-);
+    use ExtUtils::MakeMaker;
+    WriteMakefile
+      ('DISTNAME' => 'Bot-BasicBot',
+       'VERSION' => '0.2',
+       'PL_FILES' => {},
+       'PREREQ_PM' => {
+			'Pod::Coverage' => '0',
+			'POE' => '0.22',
+			'Test::More' => '0',
+			'POE::Component::IRC' => '2',
+
+		      },
+      );

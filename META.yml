@@ -1,0 +1,19 @@
+--- #YAML:1.0
+name: Bot-BasicBot
+version: 0.2
+license: perl
+distribution_type: module
+requires:
+  POE: 0.22
+  POE::Component::IRC: 2
+  Pod::Coverage: 0
+  Test::More: 0
+  perl: 5.6.0
+recommends: {}
+build_requires: {}
+conflicts: {}
+provides:
+  Bot::BasicBot:
+    file: lib/Bot/BasicBot.pm
+    version: 0.2
+generated_by: Module::Build version 0.19
