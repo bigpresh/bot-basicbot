@@ -1,20 +1,27 @@
 Revision history for Perl extension Bot::BasicBot.
 
+0.05 whenever
+    - Tom Insam (tom@jerakeen.org) takes ownership
+      rejoin that works
+      forkit() and emote() no longer need nested {}, consistent with new and say
+      changed ignore_nick to nit ignore /bot$/ - that's just silly.
+      perltidy -ce
+
 0.04 Sun Jan 26 15:56:25 2003
-        - Collated patches
-            better interactive help handling
-            AUTOLOADing
-            better rejoin handling
-            API tidies - less passing of anonymous arrays
+    - Collated patches
+      better interactive help handling
+      AUTOLOADing
+      better rejoin handling
+      API tidies - less passing of anonymous arrays
 
 0.03 Thu Nov 14 22:14:43 2002
-        - Development version, not released
+    - Development version, not released
 
 0.02 Wed Aug 22 23:15:04 2002
-        - first packaged version for CPAN
-            added ability to see emotes
-            added ability to fork long-running operations
+    - first packaged version for CPAN
+      added ability to see emotes
+      added ability to fork long-running operations
 
 0.01 Wed Aug 01 00:00:00 2002
-	- original version; created by Mark Fowler
+    - original version; created by Mark Fowler
 

@@ -37,7 +37,7 @@ You also need POE::Component::IRC.
 
 AUTHOR
 
-Bot::BasicBot is maintained by Simon Batistoni <simon@hitherto.net>.
+Bot::BasicBot is maintained by Tom Insam <tom@jerakeen.org>.
 
-It's based on initial work by Mark Fowler.
+It's based on initial work by Mark Fowler and Simon Batistoni.
 

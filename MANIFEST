@@ -4,3 +4,4 @@ Makefile.PL
 MANIFEST
 README
 test.pl
+examples/tailbot.pl
