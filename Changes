@@ -1,0 +1,11 @@
+Revision history for Perl extension Bot::BasicBot.
+
+0.02 Wed Aug 22 23:15:04 2002
+        - first packaged version for CPAN
+            added ability to see emotes
+            added ability to fork long-running operations
+
+0.01  Wed Aug 1 00:00:00 2002
+	- original version; created by Mark Fowler
+		-AX -n Bot::BasicBot
+

@@ -1,0 +1,42 @@
+Bot::BasicBot 0.02
+
+SYNOPSIS
+
+Bot::BasicBot is a basic system designed to make it easy to do simple
+bots, optionally forking longer processes (like searches) concurrently
+in the back-ground.
+
+It's based on POE, but abstracts all of the POE jiggery-pokery as much
+as possible, leaving you to just code bots.
+
+INSTALL
+
+The standard install process should work fine:
+
+perl Makefile.PL
+make
+make test
+make install (as root)
+
+POE will generate the following warning during the Makefile.PL and
+"make test" phases of installation:
+
+POE::Kernel's run() method was never called.
+
+This will hopefully be fixed in a future release, but I'm following
+the time-honoured adage "release early, release often" :) And it just
+looks untidy, it doesn't affect the install process.
+
+REQUIREMENTS
+
+You need to have POE 0.22 or later installed. Earlier versions don't
+include POE::Wheel::Run, or have POE::Wheel::Run with a different
+interface, which will break the forking component of the bot.
+
+You also need POE::Component::IRC.
+
+AUTHOR
+
+Bot::BasicBot is maintained by Simon Batistoni <simon@hitherto.net>.
+
+It's based on initial work by Mark Fowler.
