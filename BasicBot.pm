@@ -12,11 +12,11 @@ use POE::Component::IRC;
 use constant IRCNAME   => "wanna";
 use constant ALIASNAME => "pony";
 
-$Bot::BasicBot::VERSION=0.02;
+$Bot::BasicBot::VERSION=0.04;
 
 use vars qw(@ISA @EXPORT);
 @ISA = qw(Exporter);
-@EXPORT = qw(say);
+@EXPORT = qw(say emote);
 
 =head1 NAME
 
@@ -33,10 +33,10 @@ Bot::BasicBot - simple irc bot baseclass
                       server => "irc.example.com",
                       port   => "6667",
 
-                      nick     => "basicbot",
-                      altnicks => ["bbot", "simplebot"],
-                      username => "bot",
-                      name     => "Yet Another Bot",
+                      nick      => "basicbot",
+                      alt_nicks => ["bbot", "simplebot"],
+                      username  => "bot",
+                      name      => "Yet Another Bot",
 
                       ignore_list => [qw(dipsy dadadodo laotse)],
 
@@ -79,7 +79,8 @@ sub new
       }
       else
       {
-        croak "Invalid argument '$method'";
+        $this->{$method} = $args{$method};
+        #croak "Invalid argument '$method'";
       }
     }
 
@@ -174,10 +175,24 @@ the body and returning the structure you were passed works very well.)
 
 Returning undef will cause nothing to be said.
 
+=item emoted
+
+This is a secondary method that you may wish to override. In its
+default configuration, it will simply pass anything emoted on channel
+through to the C<said> handler.
+
+C<emoted> receives the same data hash as C<said>.
+
 =cut
 
 # do nothing implementation
 sub said { undef }
+
+# default emoted will pass through to "said"
+sub emoted {
+  my ($self,$emoted_hashref) = @_;
+  $self->said($emoted_hashref);
+}
 
 =item forkit
 
@@ -335,7 +350,13 @@ sub say
   # Otherwise, this is a standard object method
 
   my $this = shift;
-  my $args = shift;
+  my $args;
+  if ($#_ > 1) {
+    my %args = @_;
+    $args = \%args;
+  } else {
+    $args = shift;
+  }
 
   my $body = $args->{body};
 
@@ -346,8 +367,48 @@ sub say
   # work out who we're going to send the message to
   my $who = ($args->{channel} eq "msg") ? $args->{who} : $args->{channel};
 
+  unless ($who && $body) {
+    print STDERR "Can't PRIVMSG without target and body\n";
+    print STDERR " who = '$who'\n body = '$body'\n";
+    return;
+  }
+
   # post an event that will send the message
   $poe_kernel->post( IRCNAME, 'privmsg', $who, $body);
+}
+
+=item emote
+
+C<emote> will return data to channel, but emoted (as if you'd said
+"/me writes a spiffy new bot" in most clients). It takes the same arguments as C<say>, listed above.
+
+=cut
+
+sub emote {
+  # If we're called without an object ref, then we're handling emoting
+  # stuff from inside a forked subroutine, so we'll freeze it, and
+  # toss it out on STDOUT so that POE::Wheel::Run's handler can pick
+  # it up.
+  if (!ref($_[0])) {
+    print $_[0]."\n";
+    return 1;
+  }
+
+  # Otherwise, this is a standard object method
+
+  my ($this,$args) = @_;
+
+  my $body = $args->{body};
+
+  # Work out who we're going to send the message to
+  my $who = ($args->{channel} eq "msg") ? $args->{who} :
+                                          $args->{channel};
+
+  # post an event that will send the message
+  # if there's a better way of sending actions i'd love to know - jw
+  # me too; i'll look at it in v0.5 - sb
+
+  $poe_kernel->post(IRCNAME, 'privmsg', $who, "\cAACTION ".$body."\cA");
 }
 
 =item fork_said
@@ -383,6 +444,15 @@ whatsoever apart from returning this text.
 =cut
 
 sub help { "Sorry, this bot has no interactive help." }
+
+=item connected
+
+An optional method to override, gets called after we have connected
+to the server
+
+=cut
+
+sub connected { undef }
 
 =back
 
@@ -438,7 +508,7 @@ sub nick
 
 sub _random_nick
 {
-  my @things = ('A'..'Z'),('a'..'z'),('0'..'9');
+  my @things = ('a'..'z');
   return join '', (map { @things[rand @things] } 0..4), "bot";
 }
 
@@ -577,6 +647,30 @@ sub start_state {
                                        Username => $this->username,
                                        Ircname  => $this->name, }
                            );
+  $kernel->delay( 'reconnect', 20);
+
+}
+
+=item reconnect_state
+
+Called in order to try aggressive reconnecting. A little overhead
+here, because the bot just blindly tests whether it's connected every
+20 seconds, but it means that server drops will be picked up, and the
+bot will be far stabler during netsplits and random sever barfs.
+
+=cut
+
+sub reconnect_state {
+  my ($this, $kernel, $session) = @_[OBJECT, KERNEL, SESSION];
+
+  $kernel->post( IRCNAME, 'connect', { Debug    => 0,
+                                       Nick     => $this->nick,
+                                       Server   => $this->server,
+                                       Port     => $this->port,
+                                       Username => $this->username,
+                                       Ircname  => $this->name, }
+                           );
+  $kernel->delay( 'reconnect', 20);
 }
 
 =item stop_state
@@ -619,6 +713,8 @@ sub irc_001_state
     $this->log("Trying to connect to '$channel'\n");
     $kernel->post( IRCNAME , 'join', $channel );
   }
+
+  $this->connected();
 }
 
 =item irc_disconnected_state
@@ -691,8 +787,34 @@ formats it into a nicer format and calls 'said'
 
 =cut
 
-sub irc_said_state
-{
+sub irc_said_state {
+  irc_received_state('said','say',@_);
+}
+
+=item irc_emoted_state
+
+Called if someone "emotes" on channel, rather than directly saying
+something. Currently passes the emote striaght to C<irc_said_state>
+which deals with it as if it was a spoken phrase.
+
+=cut
+
+sub irc_emoted_state {
+  irc_received_state('emoted','emote',@_);
+}
+
+=item irc_received_state
+
+Called by C<irc_said_state> and C<irc_emoted_state> in order to format
+channel input into a more copable-with format.
+
+=cut
+
+sub irc_received_state {
+  my $received = shift;
+  my $respond = shift;
+  my $return;
+
   my ($this, $nick, $to, $body) = @_[OBJECT, ARG0, ARG1, ARG2];
 
   my $mess = {};
@@ -702,21 +824,19 @@ sub irc_said_state
 
   # right, get the list of places this message was
   # sent to and work out the first one that we're
-  # either a memeber of is is our nick
+  # either a memeber of is is our nick.
+  # The IRC protocol allows messages to be sent to multiple
+  # targets, which is pretty clever. However, noone actually
+  # /does/ this, so we can get away with this:
 
-  foreach my $channel (@{ $to })
+  my $channel = $to->[0];
+  if ($channel eq $this->nick)
   {
-    if ($channel eq $this->nick)
-    {
-      $mess->{channel} = "msg";
-      $mess->{address} = "msg";
-      last;
-    }
-    elsif (grep { $_ eq $channel } $this->channels )
-    {
-       $mess->{channel} = $channel;
-       last;
-    }
+    $mess->{channel} = "msg";
+    $mess->{address} = "msg";
+  }
+  else {
+    $mess->{channel} = $channel;
   }
 
   # okay, work out if we're addressed or not
@@ -740,23 +860,23 @@ sub irc_said_state
   $mess->{body} =~ s/\s+$//;
 
   # okay, we got this far.  Better log this.  This needs changing
-  # to a nice format.  Oooh, I could spit out sax events...
+  # to a nice format.  Oooh, I could spit out sax events... (mf)
   $this->log((join '||', $mess->{who},
                          $mess->{channel},
                          $mess->{address},
                          $mess->{body})."\n");
 
   # check if someone was asking for help
-  if ($mess->{address} and ($mess->{body} =~ /^help/))
+  if ($mess->{address} && ($mess->{body} =~ /^help/i))
   {
     $this->log("Invoking help for '$mess->{who}'\n");
-    $mess->{body} = $this->help;
+    $mess->{body} = $this->help($mess);
     $this->say($mess);
     return;
   }
 
-  # okay, call the said method
-  my $return = $this->said($mess);
+  # okay, call the said/emoted method
+  my $respond = $this->$received($mess);
 
   ### what did we get back?
 
@@ -766,26 +886,13 @@ sub irc_said_state
   # a string?  Say it how we were addressed then
   unless (ref($return))
   {
-    print STDERR "Hello: $return";
     $mess->{body} = $return;
-    $this->say($mess);
+    $this->$respond($mess);
     return;
   }
 
   # just say what we were handed back
-  $this->say($return);
-}
-
-=item irc_emoted_state
-
-Called if someone "emotes" on channel, rather than directly saying
-something. Currently passes the emote striaght to C<irc_said_state>
-which deals with it as if it was a spoken phrase.
-
-=cut
-
-sub irc_emoted_state {
-    &irc_said_state(@_);
+  $this->$respond($return);
 }
 
 =item fork_close_state
@@ -813,6 +920,29 @@ in derived classes to be more useful
 sub fork_error_state {}
 
 =back
+
+=head2 Other States
+
+=head2 Other States
+
+Bot::BasicBot implements AUTOLOAD for sending arbitrary states to the
+underlying POE::Component::IRC compoment. So for a $bot object, sending
+
+    $bot->foo("bar");
+
+is equivalent to
+
+    $poe_kernel->post(BASICBOT_ALIAS, "foo", "bar");
+
+=cut
+
+sub AUTOLOAD
+{
+  my $this = shift;
+  our $AUTOLOAD;
+  $AUTOLOAD =~ s/.*:://;
+  $poe_kernel->post(IRCNAME, $AUTOLOAD, @_);
+}
 
 =head2 Methods
 
@@ -924,7 +1054,7 @@ sub nick_strip
   my $combined = shift;
   my ($nick) = $combined =~ m/(.*?)!/;
 
-  return $nick
+  return $nick;
 }
 
 =back
@@ -941,7 +1071,10 @@ and/or modify it under the same terms as Perl itself.
 The initial version of Bot::BasicBot was written by Mark Fowler,
 and many thanks are due to him.
 
-Tweak for dealing with emotes from Jo Walsh.
+Nice code for dealing with emotes thanks to Jo Walsh.
+
+Various patches from Tom Insam, including much improved rejoining,
+AUTOLOAD stuff, better interactive help, and a few API tidies.
 
 =head1 SYSTEM REQUIREMENTS
 
@@ -962,7 +1095,7 @@ looks untidy.
 
 Don't call your bot "0".
 
-Nick tracking blatently doesn't work yet.  In Progress.
+Nick tracking blatantly doesn't work yet.  In Progress.
 
 C<fork_error_state> handlers sometimes seem to cause the bot to
 segfault. I'm not yet sure if this is a POE::Wheel::Run problem, or a
@@ -979,9 +1112,9 @@ provide a more comprehensive test suite for building bots that can,
 for example, duplicate the functionality of an infobot.
 
 Mark Fowler has done some work on making BasicBot work with other
-messaging systems, in particular Jabber. This really needs some more
-abstraction before its ready for primetime, but should be available
-shortly.
+messaging systems, in particular Jabber. It looks like this will be
+combined with Bot::BasicBot, and become a new module,
+Bot::Framework. Bot::BasicBot is, after all, supposed to be basic :)
 
 =head1 SEE ALSO
 

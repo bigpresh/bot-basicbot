@@ -1,4 +1,4 @@
-Bot::BasicBot 0.02
+Bot::BasicBot 0.04
 
 SYNOPSIS
 
@@ -40,3 +40,4 @@ AUTHOR
 Bot::BasicBot is maintained by Simon Batistoni <simon@hitherto.net>.
 
 It's based on initial work by Mark Fowler.
+
