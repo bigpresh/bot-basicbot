@@ -22,6 +22,8 @@ Bot::BasicBot - simple irc bot baseclass
     
     ignore_list => [qw(dipsy dadadodo laotse)],
 
+    charset => "utf-8", # charset the bot assumes the channel is using
+
   );
   $bot->run();
 
@@ -55,8 +57,9 @@ use POE::Wheel::Run;
 use POE::Filter::Line;
 use POE::Component::IRC;
 use Data::Dumper;
+use Text::Wrap ();
 
-our $VERSION = 0.50;
+our $VERSION = 0.60;
 
 use base qw( Exporter );
 our @EXPORT  = qw( say emote );
@@ -579,11 +582,18 @@ sub say {
     }
 
     # if we have a long body, split it up..
-    my @bodies = $body =~ m!(.{1,300})!g;
-
+    local $Text::Wrap::columns = 300;
+    local $Text::Wrap::unexpand = 0; # no tabs
+    my $wrapped = Text::Wrap::wrap('', '..', $body); #  =~ m!(.{1,300})!g;
+    # I think the Text::Wrap docs lie - it doesn't do anything special
+    # in list context
+    my @bodies = split(/\n+/, $wrapped);
+    
     # post an event that will send the message
-    for (@bodies) {
-        $poe_kernel->post( $self->{IRCNAME}, 'privmsg', $who, $_ );
+    for my $body (@bodies) {
+        my ($who, $body) = $self->charset_encode($who, $body);
+        #warn "$who => $body\n";
+        $poe_kernel->post( $self->{IRCNAME}, 'privmsg', $who, $body );
     }
 }
 
@@ -629,7 +639,7 @@ sub emote {
     # if there's a better way of sending actions i'd love to know - jw
     # me too; i'll look at it in v0.5 - sb
 
-    $poe_kernel->post( $self->{IRCNAME}, 'privmsg', $who, "\cAACTION " . $body . "\cA" );
+    $poe_kernel->post( $self->{IRCNAME}, 'privmsg', $self->charset_encode($who, "\cAACTION " . $body . "\cA") );
 }
 
 =head2 reply($mess, $body)
@@ -811,6 +821,25 @@ sub ignore_list {
     @{ $self->{ignore_list} || [] };
 }
 
+=head2 charset
+
+IRC has no defined character set for putting high-bit chars into channel.
+In general, people tend to assume latin-1, but in case your channel thinks
+differently, the bot can be told about different charsets.
+
+This feature requires perl 5.8+, I'm not fannying about with charsets
+under any other version of perl.
+
+=cut
+
+sub charset {
+  my $self = shift;
+  if (@_) {
+    $self->{charset} = shift;
+  }
+  return $self->{charset} || "iso-8859-1";
+}
+
 =head2 flood
 
 Set to '1' to disable the built-in flood protection of POE::Compoent::IRC
@@ -889,9 +918,12 @@ sub reconnect {
             Nick     => $self->nick,
             Server   => $self->server,
             Port     => $self->port,
-            Username => $self->username,
-            Ircname  => $self->name,
             Flood    => $self->flood,
+            $self->charset_encode(
+              Nick     => $self->nick,
+              Username => $self->username,
+              Ircname  => $self->name,
+            ),
         }
     );
     $kernel->delay('reconnect', $RECONNECT_TIMEOUT);
@@ -906,7 +938,7 @@ Called when we're stopping.  Shutdown the bot correctly.
 sub stop_state {
     my ( $self, $kernel ) = @_[ OBJECT, KERNEL ];
 
-    $kernel->post( $self->{IRCNAME}, 'quit', $self->quit_message );
+    $kernel->post( $self->{IRCNAME}, 'quit', $self->charset_encode($self->quit_message) );
     $kernel->alias_remove($self->{ALIASNAME});
 }
 
@@ -923,12 +955,12 @@ sub irc_001_state {
     my ( $self, $kernel ) = @_[ OBJECT, KERNEL ];
 
     # ignore all messages from ourselves
-    $kernel->post( $self->{IRCNAME}, 'ignore', $self->nick );
+    $kernel->post( $self->{IRCNAME}, 'ignore', $self->charset_encode($self->nick) );
 
     # connect to the channel
     foreach my $channel ( $self->channels ) {
         $self->log("Trying to connect to '$channel'\n");
-        $kernel->post( $self->{IRCNAME}, 'join', $channel );
+        $kernel->post( $self->{IRCNAME}, 'join', $self->charset_encode($channel) );
     }
 
     $self->schedule_tick(5);
@@ -1076,6 +1108,8 @@ sub irc_received_state {
     my $received = shift;
     my $respond  = shift;
     my ( $self, $nick, $to, $body ) = @_[ OBJECT, ARG0, ARG1, ARG2 ];
+
+    ( $nick, $to, $body ) = $self->charset_decode( $nick, $to, $body );
 
     my $return;
 
@@ -1371,7 +1405,7 @@ sub AUTOLOAD {
     my $self = shift;
     our $AUTOLOAD;
     $AUTOLOAD =~ s/.*:://;
-    $poe_kernel->post( $self->{IRCNAME}, $AUTOLOAD, @_ );
+    $poe_kernel->post( $self->{IRCNAME}, $AUTOLOAD, $self->charset_encode(@_) );
 }
 
 =head2 log
@@ -1418,6 +1452,70 @@ sub nick_strip {
     my ($nick) = $combined =~ m/(.*?)!/;
 
     return $nick;
+}
+
+=head2 charset_decode( foo, bar, baz )
+
+Converts a string of bytes into a perl string, using the bot's L<charset>.
+(under perls before 5.8, just returns the thing it's passed.
+
+Takes a list of strings, returns a list of strings, this is useful in the
+contexts that I tend to be calling it from. Bytes that cannot be decoded are
+converted to '?' symbols - see
+http://search.cpan.org/~dankogai/Encode-2.09/Encode.pm#Handling_Malformed_Data
+
+=cut
+
+# I don't know if we need perl 5.8 already. This is a quick global
+# 'can we use Encode' flag that I can use to turn on and off charset
+# handling.
+eval { require Encode };
+my $CAN_USE_ENCODE = $@ ? 0 : 1;
+
+
+sub charset_decode {
+  my $self = shift;
+  return @_ unless $CAN_USE_ENCODE;
+  my @r;
+  for (@_) {
+    if (ref($_) eq 'ARRAY') {
+      push @r, [ $self->charset_decode(@$_) ];
+    } elsif (ref($_) eq "HASH") {
+      push @r, { $self->charset_decode(%$_) };
+    } elsif (ref($_)) {
+      die "Can't decode object $_\n";
+    } else {
+      push @r, Encode::decode( $self->charset, $_, 0 );
+    }
+  }
+  #warn Dumper({ decoded => \@r });
+  return @r;
+}
+
+=head2 charset_encode( foo, bar, baz )
+
+Converts a list of perl strings into a list of byte sequences, using
+the bot's charset. See L<charset_decode>.
+
+=cut
+
+sub charset_encode {
+  my $self = shift;
+  return @_ unless $CAN_USE_ENCODE;
+  my @r;
+  for (@_) {
+    if (ref($_) eq 'ARRAY') {
+      push @r, [ $self->charset_encode(@$_) ];
+    } elsif (ref($_) eq "HASH") {
+      push @r, { $self->charset_encode(%$_) };
+    } elsif (ref($_)) {
+      die "Can't encode object $_\n";
+    } else {
+      push @r, Encode::encode( $self->charset, $_ );
+    }
+  }
+  #warn Dumper({ encoded => \@r });
+  return @r;
 }
 
 =head1 AUTHOR

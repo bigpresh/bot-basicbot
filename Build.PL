@@ -11,7 +11,9 @@ Module::Build->new(
       'POE::Component::IRC' => '2',
       'POE'                 => '0.22',
       'Test::More'          => '0.01',
+      'Text::Wrap'          => 0,
     },
-    create_makefile_pl => 'traditional',
+    create_makefile_pl => 'passthrough',
+    create_readme => 1,
 )->create_build_script;
 

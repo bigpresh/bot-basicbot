@@ -1,4 +1,9 @@
-Revision history for Perl extension Bot::BasicBot::Pluggable.
+Revision history Bot::BasicBot
+
+0.60 (dev)
+  - Charset support
+  - use Text::Wrap to split up really long responses, instead of a
+    nasty regexp, so we split on spaces properly.
 
 0.50 2004/12/01 (revision 1366)
   - Real (almost) tests

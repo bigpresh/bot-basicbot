@@ -1,6 +1,6 @@
---- #YAML:1.0
+---
 name: Bot-BasicBot
-version: 0.5
+version: 0.6
 author:
   - Tom Insam E<lt>tom@jerakeen.orgE<gt>
 abstract: simple irc bot baseclass
@@ -9,8 +9,9 @@ requires:
   POE: 0.22
   POE::Component::IRC: 2
   Test::More: 0.01
+  Text::Wrap: 0
 provides:
   Bot::BasicBot:
     file: lib/Bot/BasicBot.pm
-    version: 0.5
-generated_by: Module::Build version 0.2602
+    version: 0.6
+generated_by: Module::Build version 0.2608
