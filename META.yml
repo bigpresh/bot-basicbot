@@ -1,6 +1,6 @@
 ---
 name: Bot-BasicBot
-version: 0.6
+version: 0.61
 author:
   - Tom Insam E<lt>tom@jerakeen.orgE<gt>
 abstract: simple irc bot baseclass
@@ -13,5 +13,5 @@ requires:
 provides:
   Bot::BasicBot:
     file: lib/Bot/BasicBot.pm
-    version: 0.6
-generated_by: Module::Build version 0.2608
+    version: 0.61
+generated_by: Module::Build version 0.261

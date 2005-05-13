@@ -1,6 +1,10 @@
 Revision history Bot::BasicBot
 
-0.60 (dev)
+0.61 2005/05/13
+  - Fix for the odd behaviour of freenode - we ask the server for the time
+    periodically to catch servers that don't send pings.
+
+0.60 2005/03/21
   - Charset support
   - use Text::Wrap to split up really long responses, instead of a
     nasty regexp, so we split on spaces properly.

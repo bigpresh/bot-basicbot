@@ -59,7 +59,7 @@ use POE::Component::IRC;
 use Data::Dumper;
 use Text::Wrap ();
 
-our $VERSION = 0.60;
+our $VERSION = 0.61;
 
 use base qw( Exporter );
 our @EXPORT  = qw( say emote );
@@ -148,6 +148,9 @@ sub run {
 
                 irc_332          => "topic_raw_state",
                 irc_topic        => "topic_state",
+
+                irc_391          => "_time_state",
+                _get_time        => "_get_time_state",
                 
                 tick => "tick_state",
             }
@@ -927,6 +930,7 @@ sub reconnect {
         }
     );
     $kernel->delay('reconnect', $RECONNECT_TIMEOUT);
+    $kernel->delay('_get_time', 60);
 }
 
 =head2 stop_state
@@ -1382,6 +1386,20 @@ sub topic_state {
     = @_[OBJECT, KERNEL, ARG0, ARG1, ARG2];
   my $nick = $self->nick_strip($nickraw);
   $self->topic({ channel => $channel, who => $nick, topic => $topic });
+}
+
+
+# the server can tell us what it thinks the time is. We use this as
+# a work-around for the 'broken' behaviour of freenode (it doesn't send
+# ping messages)
+sub _get_time_state {
+  my ($self, $kernel) = @_[OBJECT, KERNEL];
+  $_[KERNEL]->post( $self->{IRCNAME}, "time");
+}
+sub _time_state {
+  my ($self, $kernel) = @_[OBJECT, KERNEL];
+  $_[KERNEL]->delay( 'reconnect', $RECONNECT_TIMEOUT );
+  $_[KERNEL]->delay( '_get_time', $RECONNECT_TIMEOUT / 2 );
 }
 
 
