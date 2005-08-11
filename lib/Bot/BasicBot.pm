@@ -59,7 +59,7 @@ use POE::Component::IRC;
 use Data::Dumper;
 use Text::Wrap ();
 
-our $VERSION = 0.61;
+our $VERSION = 0.65;
 
 use base qw( Exporter );
 our @EXPORT  = qw( say emote );
@@ -196,6 +196,11 @@ Feel free to alter the values of this hash - it won't be used later on.
 =item who
 
 Who said it (the nick that said it)
+
+=item raw_nick
+
+The raw IRC nick string of the person who said it. Only really useful
+if you want more security for some reason.
 
 =item channel
 
@@ -711,6 +716,32 @@ sub port {
     return $self->{port} || "6667";
 }
 
+=head2 password
+
+The server password for the server we're going to connect to.  Defaults to
+undef.
+
+=cut
+
+sub password {
+    my $self = shift;
+    $self->{password} = shift if @_;
+    return $self->{password} || undef;
+}
+
+=head2 ssl
+
+A boolean to indicate whether or not the server we're going to connect to
+is an SSL server.  Defaults to 0.
+
+=cut
+
+sub ssl {
+    my $self = shift;
+    $self->{ssl} = shift if @_;
+    return $self->{ssl} || 0;
+}
+
 =head2 nick
 
 The nick we're going to use.  Defaults to five random letters
@@ -921,6 +952,8 @@ sub reconnect {
             Nick     => $self->nick,
             Server   => $self->server,
             Port     => $self->port,
+            Password => $self->password,
+            UseSSL => $self->ssl,
             Flood    => $self->flood,
             $self->charset_encode(
               Nick     => $self->nick,
@@ -1119,8 +1152,12 @@ sub irc_received_state {
 
     my $mess = {};
 
+    # pass the raw body through
+    $mess->{raw_body} = $body;
+
     # work out who it was from
     $mess->{who} = $self->nick_strip($nick);
+    $mess->{raw_nick} = $nick;
 
     # right, get the list of places this message was
     # sent to and work out the first one that we're
@@ -1130,7 +1167,7 @@ sub irc_received_state {
     # /does/ this, so we can get away with this:
 
     my $channel = $to->[0];
-    if ( $channel eq $self->nick ) {
+    if ( lc($channel) eq lc($self->nick) ) {
         $mess->{channel} = "msg";
         $mess->{address} = "msg";
     } else {
@@ -1143,13 +1180,13 @@ sub irc_received_state {
     unless ( $mess->{channel} eq "msg" ) {
         my $nick = $self->nick;
 
-        if ( $mess->{body} =~ s/^(\Q$nick\E)\s*[:,-]?\s*// ) {
+        if ( $mess->{body} =~ s/^(\Q$nick\E)\s*[:,-]?\s*//i ) {
           $mess->{address} = $1;
         }
 
         foreach $nick ( $self->alt_nicks ) {
             last if $mess->{address};
-            if ( $mess->{body} =~ s/^(\Q$nick\E)\s*[:,-]?\s*// ) {
+            if ( $mess->{body} =~ s/^(\Q$nick\E)\s*[:,-]?\s*//i ) {
               $mess->{address} = $1;
             }
         }

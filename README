@@ -74,6 +74,10 @@ METHODS TO OVERRIDE
 
     who Who said it (the nick that said it)
 
+    raw_nick
+        The raw IRC nick string of the person who said it. Only really
+        useful if you want more security for some reason.
+
     channel
         The channel in which they said it. Has special value "msg" if it was
         in a message. Actually, you can send a message to many channels at
@@ -292,6 +296,14 @@ ATTRIBUTES
 
   port
     The port we're going to use. Defaults to "6667"
+
+  password
+    The server password for the server we're going to connect to. Defaults
+    to undef.
+
+  ssl
+    A boolean to indicate whether or not the server we're going to connect
+    to is an SSL server. Defaults to 0.
 
   nick
     The nick we're going to use. Defaults to five random letters and numbers

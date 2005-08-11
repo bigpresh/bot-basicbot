@@ -1,5 +1,9 @@
 Revision history Bot::BasicBot
 
+0.65 2005/08/11
+  - Added raw_nick support and a tiny amount of documentation
+  - Support for SSL, contributed by Bradley M. Kuhn <bkuhn@softwarefreedom.org>
+
 0.61 2005/05/13
   - Fix for the odd behaviour of freenode - we ask the server for the time
     periodically to catch servers that don't send pings.
