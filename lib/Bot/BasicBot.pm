@@ -59,7 +59,7 @@ use POE::Component::IRC;
 use Data::Dumper;
 use Text::Wrap ();
 
-our $VERSION = 0.65;
+our $VERSION = 0.70;
 
 use base qw( Exporter );
 our @EXPORT  = qw( say emote );
@@ -112,10 +112,6 @@ Runs the bot.  Hands the control over to the POE core.
 
 sub run {
     my $self = shift;
-
-    # yep, we use irc
-    POE::Component::IRC->new($self->{IRCNAME})
-      or die "Can't instantiate new IRC component!\n";
 
     # create the callbacks to the object states
     POE::Session->create(
@@ -906,10 +902,6 @@ sub start_state {
     # Make an alias for our session, to keep it from getting GC'ed.
     $kernel->alias_set($self->{ALIASNAME});
 
-    # Ask the IRC component to send us all IRC events it receives. This
-    # is the easy, indiscriminate way to do it.
-    $kernel->post($self->{IRCNAME}, 'register', 'all');
-
     $kernel->delay('reconnect', 1 );
 
     $kernel->delay('tick', 30);
@@ -943,7 +935,7 @@ sub reconnect {
 
     $kernel->call( $self->{IRCNAME}, 'disconnect' );
     $kernel->call( $self->{IRCNAME}, 'shutdown' );
-    POE::Component::IRC->new($self->{IRCNAME});
+    POE::Component::IRC->spawn( alias => $self->{IRCNAME} );
     $kernel->post( $self->{IRCNAME}, 'register', 'all' );
 
     $kernel->post($self->{IRCNAME}, 'connect',

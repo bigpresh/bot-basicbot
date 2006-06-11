@@ -1,17 +1,17 @@
 ---
 name: Bot-BasicBot
-version: 0.65
+version: 0.7
 author:
-  - Tom Insam E<lt>tom@jerakeen.orgE<gt>
+  - 'Tom Insam E<lt>tom@jerakeen.orgE<gt>'
 abstract: simple irc bot baseclass
 license: perl
 requires:
   POE: 0.22
-  POE::Component::IRC: 2
+  POE::Component::IRC: 4.0
   Test::More: 0.01
   Text::Wrap: 0
 provides:
   Bot::BasicBot:
     file: lib/Bot/BasicBot.pm
-    version: 0.65
-generated_by: Module::Build version 0.2611
+    version: 0.7
+generated_by: Module::Build version 0.2612

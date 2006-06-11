@@ -7,7 +7,7 @@ use lib qw(lib t/lib);
 
 require IO::Socket;
 my $s = IO::Socket::INET->new(
-  PeerAddr => "irc.perl.org:6667",
+  PeerAddr => "irc.perl.org:80",
   Timeout  => 10,
 );
 
@@ -25,7 +25,7 @@ use TestBot;
 
 my $bot = TestBot->new(
   nick => "basicbot_$$",
-  server => "london.irc.perl.org",
+  server => "irc.perl.org",
   channels => ["#bot_basicbot_test"],
 );
 

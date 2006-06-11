@@ -9,7 +9,6 @@ lib/Bot/BasicBot.pm
 Makefile.PL
 MANIFEST			This list of files
 META.yml
-NINJA
 README
 t/00bootstrap.t
 t/connect.t

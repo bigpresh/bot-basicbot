@@ -1,5 +1,10 @@
 Revision history Bot::BasicBot
 
+0.70 2006/06/11
+  - Updates for new PoDo::IRC
+  - No longer do 2 server connects on startup
+  - the connect test doesn't break itself by faking a connection first
+
 0.65 2005/08/11
   - Added raw_nick support and a tiny amount of documentation
   - Support for SSL, contributed by Bradley M. Kuhn <bkuhn@softwarefreedom.org>
