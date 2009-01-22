@@ -1,5 +1,10 @@
 Revision history Bot::BasicBot
 
+0.80 2009/01/22
+  - Understand quit messages - https://rt.cpan.org/Ticket/Display.html?id=42625
+  - Fix the ->name method on the bot to actually return something sensible - https://rt.cpan.org/Ticket/Display.html?id=27427
+  - Try to avoid zombie children on forking - https://rt.cpan.org/Public/Bug/Display.html?id=38010
+
 0.70 2006/06/11
   - Updates for new PoDo::IRC
   - No longer do 2 server connects on startup

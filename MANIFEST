@@ -1,4 +1,3 @@
-Build.PL
 Changes
 examples/countdownbot.pl
 examples/cpanbot.pl
@@ -7,9 +6,8 @@ examples/tailbot.pl
 examples/tango.pl
 lib/Bot/BasicBot.pm
 Makefile.PL
-MANIFEST			This list of files
-META.yml
-README
+MANIFEST
 t/00bootstrap.t
 t/connect.t
 t/lib/TestBot.pm
+META.yml                                 Module meta-data (added by MakeMaker)

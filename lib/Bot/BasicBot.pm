@@ -59,7 +59,7 @@ use POE::Component::IRC;
 use Data::Dumper;
 use Text::Wrap ();
 
-our $VERSION = 0.70;
+our $VERSION = 0.80;
 
 use base qw( Exporter );
 our @EXPORT  = qw( say emote );
@@ -135,6 +135,7 @@ sub run {
                 irc_kick         => "irc_kicked_state",
                 irc_nick         => "irc_nick_state",
                 irc_mode         => "irc_mode_state",
+                irc_quit         => "irc_quit_state",
 
                 fork_close       => "fork_close_state",
                 fork_error       => "fork_error_state",
@@ -370,6 +371,20 @@ to the server
 
 sub connected { undef }
 
+=head2 userquit( $mess )
+
+$mess looks like
+
+    { who => "nick that quit",
+      body => "quit message",
+    }
+
+=cut
+
+sub userquit {
+    my ($self, $mess) = @_;
+}
+
 
 
 =head1 BOT METHODS
@@ -489,6 +504,9 @@ sub forkit {
         StderrEvent  => "fork_error",
         CloseEvent   => "fork_close"
     );
+
+    # Use a signal handler to reap dead processes
+    $poe_kernel->sig_child( $wheel->PID, "got_sigchld" );
 
     # store the wheel object in our bot, so we can retrieve/delete easily
 
@@ -801,7 +819,7 @@ The name that the bot will identify itself as.  Defaults to
 sub name {
     my $self = shift;
     $self->{name} = shift if @_;
-    $_[0]->{name} or $self->nick . " bot";
+    $self->{name} or $self->nick . " bot";
 }
 
 =head2 channels
@@ -1099,6 +1117,24 @@ sub irc_mode_state {
 
         $self->{channel_data}{$channel}{$who} = $current;
     }
+}
+
+
+=head2 irc_quit_state
+
+=cut
+
+sub irc_quit_state {
+    my ($self, $kernel, $session) = @_[OBJECT, KERNEL, SESSION];
+    my ($nick, $message) = @_[ARG0..$#_];
+
+    $nick = $self->nick_strip($nick);
+
+    $self->userquit({ who => $nick, body => $message });
+
+    # do this second, so that the userquit implementor has a chance to see
+    # which channels they left
+    $self->_remove_from_all_channels( $nick );
 }
 
 =head2 irc_said_state
