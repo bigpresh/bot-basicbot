@@ -59,7 +59,7 @@ use POE::Component::IRC;
 use Data::Dumper;
 use Text::Wrap ();
 
-our $VERSION = 0.80;
+our $VERSION = 0.81;
 
 use base qw( Exporter );
 our @EXPORT  = qw( say emote );
@@ -1430,6 +1430,15 @@ sub _add_to_channel {
 sub _remove_from_channel {
   my ($self, $channel, $nick) = @_;
   delete $self->{channel_data}{$channel}{$nick};
+}
+
+sub _remove_from_all_channels {
+  my ($self, $nick) = @_;
+  for my $channel (keys %{ $self->{channel_data} }) {
+    if ( $self->{channel_data}{$channel}{$nick} ) {
+      $self->_remove_from_channel( $channel, $nick );
+    }
+  }
 }
 
 =head2 topic_raw_state

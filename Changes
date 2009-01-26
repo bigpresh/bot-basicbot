@@ -1,5 +1,8 @@
 Revision history Bot::BasicBot
 
+0.81 2009/01/26
+  - Implement remove_from_all_channels, you idiot. Sigh.
+
 0.80 2009/01/22
   - Understand quit messages - https://rt.cpan.org/Ticket/Display.html?id=42625
   - Fix the ->name method on the bot to actually return something sensible - https://rt.cpan.org/Ticket/Display.html?id=27427

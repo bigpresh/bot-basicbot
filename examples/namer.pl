@@ -21,7 +21,7 @@ sub said {
 }
 
 Bot->new(
-  server => "irc.freenode.org",
+  server => "irc.perl.org",
   channels => [ '#jerakeen' ],
   nick => 'namer',
 )->run();
