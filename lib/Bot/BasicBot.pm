@@ -56,6 +56,7 @@ use POE::Session;
 use POE::Wheel::Run;
 use POE::Filter::Line;
 use POE::Component::IRC;
+use POE::Component::IRC::Plugin::Connector;
 use Data::Dumper;
 use Text::Wrap ();
 
@@ -63,8 +64,6 @@ our $VERSION = 0.81;
 
 use base qw( Exporter );
 our @EXPORT  = qw( say emote );
-
-our $RECONNECT_TIMEOUT = 500;
 
 =head1 STARTING THE BOT
 
@@ -124,8 +123,6 @@ sub run {
                 irc_msg          => "irc_said_state",
                 irc_public       => "irc_said_state",
                 irc_ctcp_action  => "irc_emoted_state",
-                irc_ping         => "irc_ping_state",
-                reconnect        => "reconnect",
 
                 irc_disconnected => "irc_disconnected_state",
                 irc_error        => "irc_error_state",
@@ -146,8 +143,7 @@ sub run {
                 irc_332          => "topic_raw_state",
                 irc_topic        => "topic_state",
 
-                irc_391          => "_time_state",
-                _get_time        => "_get_time_state",
+                irc_shutdown     => "shutdown_state",
                 
                 tick => "tick_state",
             }
@@ -160,6 +156,12 @@ sub run {
     # run
     $poe_kernel->run() unless $self->{no_run};
 }
+
+=head1 STOPPING THE BOT
+
+To shut down the bot cleanly, use the L<C<quit>|/quit> method.
+
+=cut
 
 =head1 METHODS TO OVERRIDE
 
@@ -384,7 +386,6 @@ $mess looks like
 sub userquit {
     my ($self, $mess) = @_;
 }
-
 
 
 =head1 BOT METHODS
@@ -693,6 +694,19 @@ sub channel_data {
   return $self->{channel_data}{$channel}
 }
 
+=head2 quit( $mess )
+
+Quits from IRC and shuts down the bot cleanly. C<$mess> will be used as the
+quit message, if present.
+
+=cut
+
+sub quit {
+    my ($self, $mess) = @_;
+    $poe_kernel->post($self->{IRCNAME}, 'quit', $mess);
+    $self->{shutting_down} = 1;
+}
+
 =head1 ATTRIBUTES
 
 Get or set methods.  Changing most of these values when connected
@@ -919,41 +933,10 @@ sub start_state {
 
     # Make an alias for our session, to keep it from getting GC'ed.
     $kernel->alias_set($self->{ALIASNAME});
-
-    $kernel->delay('reconnect', 1 );
-
     $kernel->delay('tick', 30);
-}
 
-=head2 reconnect
-
-Connects the bot to the IRC server. Called 1 second after the 'start'
-event.
-
-in an ideal world, this will never get called again - we schedule it for 'x'
-seconds in the future, and whenever we see a server ping we reset this
-counter again. This means that it'll get run if we haven't seen anything
-from the server for a while, so we can assume that something bad has
-happened. At that point we shotgun the IRC session and restart
-everything, so we reconnect to the server.
-
-This is by far the most reliable way I have found of ensuring that a bot
-will reconnect to a server after it's lost a network connection for some
-reason.
-
-By default, the timeout is 300 seconds. It can be set by changing
-$Bot::BasicBot::RECONNECT_TIMEOUT.
-
-=cut
-
-sub reconnect {
-    my ( $self, $kernel, $session ) = @_[ OBJECT, KERNEL, SESSION ];
-
-    $self->log("Trying to connect to server ".$self->server);
-
-    $kernel->call( $self->{IRCNAME}, 'disconnect' );
-    $kernel->call( $self->{IRCNAME}, 'shutdown' );
-    POE::Component::IRC->spawn( alias => $self->{IRCNAME} );
+    my $irc = POE::Component::IRC->spawn( alias => $self->{IRCNAME} );
+    $irc->plugin_add('Connector', POE::Component::IRC::Plugin::Connector->new());
     $kernel->post( $self->{IRCNAME}, 'register', 'all' );
 
     $kernel->post($self->{IRCNAME}, 'connect',
@@ -972,8 +955,6 @@ sub reconnect {
             ),
         }
     );
-    $kernel->delay('reconnect', $RECONNECT_TIMEOUT);
-    $kernel->delay('_get_time', 60);
 }
 
 =head2 stop_state
@@ -982,12 +963,7 @@ Called when we're stopping.  Shutdown the bot correctly.
 
 =cut
 
-sub stop_state {
-    my ( $self, $kernel ) = @_[ OBJECT, KERNEL ];
-
-    $kernel->post( $self->{IRCNAME}, 'quit', $self->charset_encode($self->quit_message) );
-    $kernel->alias_remove($self->{ALIASNAME});
-}
+sub stop_state { }
 
 =head2 irc_001_state
 
@@ -1017,28 +993,29 @@ sub irc_001_state {
 
 =head2 irc_disconnected_state
 
-Called if we are disconnected from the server. 
-Logs the error and schedules a reconnect event.
+Called if we are disconnected from the server. Logs the error.
 
 =cut
 
 sub irc_disconnected_state {
     my ( $self, $kernel, $server ) = @_[ OBJECT, KERNEL, ARG0 ];
     $self->log("Lost connection to server $server.\n");
-    $kernel->delay('reconnect', 30);
+
+    if ($self->{shutting_down}) {
+        $kernel->post($self->{IRCNAME}, 'shutdown');
+        delete $self->{shutting_down};
+    }
 }
 
 =head2 irc_error_state
 
-Called if there is an irc server error.
-Logs the error and schedules a reconnect event.
+Called if there is an irc server error. Logs the error.
 
 =cut
 
 sub irc_error_state {
     my ( $self, $err, $kernel ) = @_[ OBJECT, ARG0, KERNEL ];
     $self->log("Server error occurred! $err\n");
-    $kernel->delay('reconnect', 30);
 }
 
 =head2 irc_kicked_state
@@ -1145,7 +1122,6 @@ formats it into a nicer format and calls 'said'
 =cut
 
 sub irc_said_state {
-    $_[KERNEL]->delay( 'reconnect', $RECONNECT_TIMEOUT );
     irc_received_state( 'said', 'say', @_ );
 }
 
@@ -1158,7 +1134,6 @@ which deals with it as if it was a spoken phrase.
 =cut
 
 sub irc_emoted_state {
-    $_[KERNEL]->delay( 'reconnect', $RECONNECT_TIMEOUT );
     irc_received_state( 'emoted', 'emote', @_ );
 }
 
@@ -1247,25 +1222,6 @@ sub irc_received_state {
     }
 }
 
-=head2 irc_ping_state
-
-The most reliable way I've found of doing auto-server-rejoin is to listen for
-pings. Every ping we get, we put off rejoining the server for another few mins.
-If we haven't heard a ping in a while, the rejoin code will get called.
-
-Recently, I've adapted this for servers that don't send pings very often,
-and reset the counter any time _anything_ interesting happens.
-
-You can change the amount of time the bot waits between events before calling
-a reconnect event by changing $Bot::BasicBot::RECONNECT_TIMEOUT to a value in
-seconds. The default is '500'.
-
-=cut
-
-sub irc_ping_state {
-    $_[KERNEL]->delay( 'reconnect', $RECONNECT_TIMEOUT );
-}
-
 =head2 irc_chanjoin_state
 
 Called if someone joins a channel.
@@ -1274,7 +1230,6 @@ Called if someone joins a channel.
 
 sub irc_chanjoin_state {
     my $self = $_[OBJECT];
-    $_[KERNEL]->delay( 'reconnect', $RECONNECT_TIMEOUT );
     my ($channel, $nick) = @_[ ARG1, ARG0 ];
     $nick = $_[OBJECT]->nick_strip($nick);
     if ($self->nick eq $nick) {
@@ -1294,7 +1249,6 @@ Called if someone parts a channel.
 
 sub irc_chanpart_state {
     my $self = $_[OBJECT];
-    $_[KERNEL]->delay( 'reconnect', $RECONNECT_TIMEOUT );
     my ($channel, $nick) = @_[ ARG1, ARG0 ];
     $nick = $_[OBJECT]->nick_strip($nick);
     if ($self->nick eq $nick) {
@@ -1462,21 +1416,15 @@ sub topic_state {
   $self->topic({ channel => $channel, who => $nick, topic => $topic });
 }
 
+=head2 shutdown_state
 
-# the server can tell us what it thinks the time is. We use this as
-# a work-around for the 'broken' behaviour of freenode (it doesn't send
-# ping messages)
-sub _get_time_state {
-  my ($self, $kernel) = @_[OBJECT, KERNEL];
-  $_[KERNEL]->post( $self->{IRCNAME}, "time");
+=cut
+
+sub shutdown_state {
+    my ($kernel, $self) = @_[KERNEL, OBJECT];
+    $kernel->delay('tick');
+    $kernel->alias_remove($self->{ALIASNAME});
 }
-sub _time_state {
-  my ($self, $kernel) = @_[OBJECT, KERNEL];
-  $_[KERNEL]->delay( 'reconnect', $RECONNECT_TIMEOUT );
-  $_[KERNEL]->delay( '_get_time', $RECONNECT_TIMEOUT / 2 );
-}
-
-
 
 =head1 OTHER METHODS
 

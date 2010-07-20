@@ -9,7 +9,7 @@ WriteMakefile
           'VERSION_FROM' => 'lib/Bot/BasicBot.pm',
           'PREREQ_PM' => {
                            'Test::More' => '0.01',
-                           'POE::Component::IRC' => '4.0',
+                           'POE::Component::IRC' => '6.35',
                            'Text::Wrap' => 0,
                            'POE' => '0.22'
                          }
