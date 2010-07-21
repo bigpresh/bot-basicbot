@@ -703,8 +703,14 @@ quit message, if present.
 
 sub quit {
     my ($self, $mess) = @_;
-    $poe_kernel->post($self->{IRCNAME}, 'quit', $mess);
-    $self->{shutting_down} = 1;
+
+    if ($self->{IRCOBJ}->connected()) {
+        $poe_kernel->post($self->{IRCNAME}, 'quit', $mess);
+        $self->{shutting_down} = 1;
+    }
+    else {
+        $poe_kernel->post($self->{IRCNAME}, 'shutdown');
+    }
 }
 
 =head1 ATTRIBUTES
@@ -935,8 +941,8 @@ sub start_state {
     $kernel->alias_set($self->{ALIASNAME});
     $kernel->delay('tick', 30);
 
-    my $irc = POE::Component::IRC->spawn( alias => $self->{IRCNAME} );
-    $irc->plugin_add('Connector', POE::Component::IRC::Plugin::Connector->new());
+    $self->{IRCOBJ} = POE::Component::IRC->spawn( alias => $self->{IRCNAME} );
+    $self->{IRCOBJ}->plugin_add('Connector', POE::Component::IRC::Plugin::Connector->new());
     $kernel->post( $self->{IRCNAME}, 'register', 'all' );
 
     $kernel->post($self->{IRCNAME}, 'connect',
