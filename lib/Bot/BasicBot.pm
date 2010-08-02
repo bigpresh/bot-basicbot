@@ -1430,6 +1430,9 @@ sub shutdown_state {
     my ($kernel, $self) = @_[KERNEL, OBJECT];
     $kernel->delay('tick');
     $kernel->alias_remove($self->{ALIASNAME});
+    for my $fork (values %{ $self->{forks} }) {
+        $fork->{wheel}->kill();
+    }
 }
 
 =head1 OTHER METHODS
