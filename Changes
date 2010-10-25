@@ -1,8 +1,9 @@
 Revision history Bot::BasicBot
 
-0.82
+{{$NEXT}}
   - Use POE::Component::IRC's Connector plugin to handle reconnects
   - Kill forks on shutdown
+  - Migrate distribution to Dist::Zilla
 
 0.81 2009/01/26
   - Implement remove_from_all_channels, you idiot. Sigh.

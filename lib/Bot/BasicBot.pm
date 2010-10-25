@@ -60,8 +60,6 @@ use POE::Component::IRC::Plugin::Connector;
 use Data::Dumper;
 use Text::Wrap ();
 
-our $VERSION = 0.81;
-
 use base qw( Exporter );
 our @EXPORT  = qw( say emote );
 
