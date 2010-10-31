@@ -153,6 +153,7 @@ sub run {
 
     # run
     $poe_kernel->run() unless $self->{no_run};
+    return;
 }
 
 =head1 STOPPING THE BOT
@@ -175,7 +176,7 @@ you failed, in which case new() will die.
 
 =cut
 
-sub init { 1; }
+sub init { return 1; }
 
 
 =head2 said($args)
@@ -230,7 +231,7 @@ Returning undef will cause nothing to be said.
 
 =cut
 
-sub said { undef }
+sub said { return }
 
 =head2 emoted( $args )
 
@@ -244,7 +245,7 @@ C<emoted> receives the same data hash as C<said>.
 =cut
 
 sub emoted {
-    shift->said(@_);
+    return shift->said(@_);
 }
 
 =head2 chanjoin( $mess )
@@ -257,7 +258,7 @@ This is a do-nothing implementation, override this in your subclass.
 
 =cut
 
-sub chanjoin { undef }
+sub chanjoin { return }
 
 =head2 chanpart( $mess )
 
@@ -269,7 +270,7 @@ This is a do-nothing implementation, override this in your subclass.
 
 =cut
 
-sub chanpart { undef }
+sub chanpart { return }
 
 =head2 got_names( $mess )
 
@@ -290,7 +291,7 @@ method won't be called when that happens.
 
 =cut
 
-sub got_names { undef }
+sub got_names { return }
 
 =head2 topic( $mess )
 
@@ -300,7 +301,7 @@ channel, and $mess->{topic} will be the new topic of the channel.
 
 =cut
 
-sub topic { undef }
+sub topic { return }
 
 =head2 nick_change( $mess )
 
@@ -312,7 +313,7 @@ When a user changes nicks, this will be called. $mess looks like
 
 =cut
 
-sub nick_change { undef }
+sub nick_change { return }
 
 =head2 kicked( $mess )
 
@@ -328,7 +329,7 @@ The reply value is ignored.
 
 =cut
 
-sub kicked { undef }
+sub kicked { return }
 
 =head2 tick()
 
@@ -360,7 +361,7 @@ whatsoever apart from returning this text.
 
 =cut
 
-sub help { "Sorry, this bot has no interactive help." }
+sub help { return "Sorry, this bot has no interactive help." }
 
 =head2 connected
 
@@ -369,7 +370,7 @@ to the server
 
 =cut
 
-sub connected { undef }
+sub connected { return }
 
 =head2 userquit( $mess )
 
@@ -383,6 +384,7 @@ $mess looks like
 
 sub userquit {
     my ($self, $mess) = @_;
+    return;
 }
 
 
@@ -404,6 +406,7 @@ sub schedule_tick {
   my $self = shift;
   my $time = shift || 5;
   $self->{kernel}->delay( tick => $time );
+  return;
 }
 
 =head2 forkit
@@ -479,7 +482,7 @@ sub forkit {
         $args = \%args;
     }
 
-    return undef unless $args->{run};
+    return unless $args->{run};
 
     $args->{handler}   = $args->{handler}   || "_fork_said";
     $args->{arguments} = $args->{arguments} || [];
@@ -517,7 +520,7 @@ sub forkit {
             address => $args->{address}
         }
     };
-    return undef;
+    return;
 }
 
 sub _fork_said {
@@ -529,6 +532,7 @@ sub _fork_said {
     $args->{body} = $body;
 
     $self->say($args);
+    return;
 }
 
 =head2 say( key => value, .. )
@@ -612,10 +616,12 @@ sub say {
     
     # post an event that will send the message
     for my $body (@bodies) {
-        my ($who, $body) = $self->charset_encode($who, $body);
-        #warn "$who => $body\n";
-        $poe_kernel->post( $self->{IRCNAME}, 'privmsg', $who, $body );
+        my ($enc_who, $enc_body) = $self->charset_encode($who, $body);
+        #warn "$enc_who => $enc_body\n";
+        $poe_kernel->post( $self->{IRCNAME}, 'privmsg', $enc_who, $enc_body );
     }
+
+    return;
 }
 
 =head2 emote( key => value, .. )
@@ -661,6 +667,7 @@ sub emote {
     # me too; i'll look at it in v0.5 - sb
 
     $poe_kernel->post( $self->{IRCNAME}, 'privmsg', $self->charset_encode($who, "\cAACTION " . $body . "\cA") );
+    return;
 }
 
 =head2 reply($mess, $body)
@@ -709,6 +716,8 @@ sub quit {
     else {
         $poe_kernel->post($self->{IRCNAME}, 'shutdown');
     }
+
+    return;
 }
 
 =head1 ATTRIBUTES
@@ -811,7 +820,7 @@ sub alt_nicks {
         my @args = ( ref $_[0] eq "ARRAY" ) ? @{ $_[0] } : @_;
         $self->{alt_nicks} = \@args;
     }
-    @{ $self->{alt_nicks} || [] };
+    return @{ $self->{alt_nicks} || [] };
 }
 
 =head2 username
@@ -824,7 +833,7 @@ will be the same as our nick.
 sub username {
     my $self = shift;
     $self->{username} = shift if @_;
-    $self->{username} or $self->nick;
+    return defined $self->{username} ? $self->{username} : $self->nick;
 }
 
 =head2 name
@@ -837,7 +846,7 @@ The name that the bot will identify itself as.  Defaults to
 sub name {
     my $self = shift;
     $self->{name} = shift if @_;
-    $self->{name} or $self->nick . " bot";
+    return defined $self->{name} ? $self->{name} : $self->nick . " bot";
 }
 
 =head2 channels
@@ -854,7 +863,7 @@ sub channels {
         my @args = ( ref $_[0] eq "ARRAY" ) ? @{ $_[0] } : @_;
         $self->{channels} = \@args;
     }
-    @{ $self->{channels} || [] };
+    return @{ $self->{channels} || [] };
 }
 
 =head2 quit_message
@@ -866,7 +875,7 @@ The quit message.  Defaults to "Bye".
 sub quit_message {
     my $self = shift;
     $self->{quit_message} = shift if @_;
-    defined( $self->{quit_message} ) ? $self->{quit_message} : "Bye";
+    return defined $self->{quit_message} ? $self->{quit_message} : "Bye";
 }
 
 =head2 ignore_list
@@ -884,7 +893,7 @@ sub ignore_list {
         my @args = ( ref $_[0] eq "ARRAY" ) ? @{ $_[0] } : @_;
         $self->{ignore_list} = \@args;
     }
-    @{ $self->{ignore_list} || [] };
+    return @{ $self->{ignore_list} || [] };
 }
 
 =head2 charset
@@ -915,7 +924,7 @@ Set to '1' to disable the built-in flood protection of POE::Compoent::IRC
 sub flood {
     my $self = shift;
     $self->{flood} = shift if @_;
-    $self->{flood};
+    return $self->{flood};
 }
 
 =head1 STATES
@@ -959,6 +968,8 @@ sub start_state {
             ),
         }
     );
+
+    return;
 }
 
 =head2 stop_state
@@ -993,6 +1004,7 @@ sub irc_001_state {
     $self->schedule_tick(5);
 
     $self->connected();
+    return;
 }
 
 =head2 irc_disconnected_state
@@ -1009,6 +1021,7 @@ sub irc_disconnected_state {
         $kernel->post($self->{IRCNAME}, 'shutdown');
         delete $self->{shutting_down};
     }
+    return;
 }
 
 =head2 irc_error_state
@@ -1020,6 +1033,7 @@ Called if there is an irc server error. Logs the error.
 sub irc_error_state {
     my ( $self, $err, $kernel ) = @_[ OBJECT, ARG0, KERNEL ];
     $self->log("Server error occurred! $err\n");
+    return;
 }
 
 =head2 irc_kicked_state
@@ -1037,6 +1051,7 @@ sub irc_kicked_state {
     my $nick = $self->nick_strip($nickstring);
     $_[OBJECT]->_remove_from_channel( $channel, $kicked );
     $self->kicked({ channel => $channel, who => $nick, kicked => $kicked, reason => $reason });
+    return;
 }
 
 =head2 irc_join_state
@@ -1047,6 +1062,7 @@ Called if someone joins.  Used for nick tracking
 
 sub irc_join_state {
     my ( $self, $nick ) = @_[ OBJECT, ARG0 ];
+    return;
 }
 
 =head2 irc_nick_state
@@ -1063,12 +1079,14 @@ sub irc_nick_state {
           = delete $self->{channel_data}{$channel}{$nick};
     }
     $self->nick_change($nick, $newnick);
+    return;
 }
 
 =head2 irc_mode_state
 
 =cut
 
+## no critic (ControlStructures::ProhibitCascadingIfElse)
 sub irc_mode_state {
     my ($self, $kernel, $session) = @_[OBJECT, KERNEL, SESSION];
     my ($nickstring, $channel, $mode, @ops) = @_[ARG0..$#_];
@@ -1081,23 +1099,24 @@ sub irc_mode_state {
 
         my $op = shift(@modes);
 
-        if ($added and $op eq 'o') {
+        if ($added && $op eq 'o') {
           $current->{op} = 1;
           $current->{voice} = 0;
 
-        } elsif ($added and $op eq 'v') {
+        } elsif ($added && $op eq 'v') {
           $current->{voice} = 1 unless $current->{op};
 
-        } elsif (!$added and $op eq 'o') {
+        } elsif (!$added && $op eq 'o') {
           $current->{op} = 0;
           $current->{voice} = 0;
 
-        } elsif (!$added and $op eq 'v') {
+        } elsif (!$added && $op eq 'v') {
           $current->{voice} = 1 unless $current->{op};
         }
 
         $self->{channel_data}{$channel}{$who} = $current;
     }
+    return;
 }
 
 
@@ -1116,6 +1135,7 @@ sub irc_quit_state {
     # do this second, so that the userquit implementor has a chance to see
     # which channels they left
     $self->_remove_from_all_channels( $nick );
+    return;
 }
 
 =head2 irc_said_state
@@ -1127,6 +1147,7 @@ formats it into a nicer format and calls 'said'
 
 sub irc_said_state {
     irc_received_state( 'said', 'say', @_ );
+    return;
 }
 
 =head2 irc_emoted_state
@@ -1139,6 +1160,7 @@ which deals with it as if it was a spoken phrase.
 
 sub irc_emoted_state {
     irc_received_state( 'emoted', 'emote', @_ );
+    return;
 }
 
 =head2 irc_received_state
@@ -1185,15 +1207,15 @@ sub irc_received_state {
 
     $mess->{body} = $body;
     unless ( $mess->{channel} eq "msg" ) {
-        my $nick = $self->nick;
+        my $own_nick = $self->nick;
 
-        if ( $mess->{body} =~ s/^(\Q$nick\E)\s*[:,-]?\s*//i ) {
+        if ( $mess->{body} =~ s/^(\Q$own_nick\E)\s*[:,-]?\s*//i ) {
           $mess->{address} = $1;
         }
 
-        foreach $nick ( $self->alt_nicks ) {
+        foreach my $alt_nick ( $self->alt_nicks ) {
             last if $mess->{address};
-            if ( $mess->{body} =~ s/^(\Q$nick\E)\s*[:,-]?\s*//i ) {
+            if ( $mess->{body} =~ s/^(\Q$alt_nick\E)\s*[:,-]?\s*//i ) {
               $mess->{address} = $1;
             }
         }
@@ -1243,6 +1265,7 @@ sub irc_chanjoin_state {
     }
     $_[OBJECT]->_add_to_channel( $channel, $nick );
     irc_chan_received_state( 'chanjoin', 'say', @_ );
+    return;
 }
 
 =head2 irc_chanpart_state
@@ -1262,6 +1285,7 @@ sub irc_chanpart_state {
     }
     $_[OBJECT]->_remove_from_channel( $channel, $nick );
     irc_chan_received_state( 'chanpart', 'say', @_ );
+    return;
 }
 
 =head2 irc_chan_received_state
@@ -1314,6 +1338,7 @@ from memory.
 sub fork_close_state {
     my ( $self, $wheel_id ) = @_[ 0, ARG0 ];
     delete $self->{forks}->{$wheel_id};
+    return;
 }
 
 =head2 fork_error_state
@@ -1337,6 +1362,7 @@ sub tick_state {
     my ( $self, $kernel, $heap ) = @_[ OBJECT, KERNEL, HEAP ];
     my $delay = $self->tick();
     $self->schedule_tick($delay) if $delay;
+    return;
 }
 
 =head2 names_state
@@ -1360,6 +1386,7 @@ sub names_state {
       voice => $voice,
     }
   }
+  return;
 }
 
 =head2 names_done_state
@@ -1376,6 +1403,7 @@ sub names_done_state {
   return unless $built;
   $self->{channel_data}{$channel} = $built;
   $self->names({ channel => $channel, names => $built });
+  return;
 }
 
 
@@ -1383,11 +1411,13 @@ sub _add_to_channel {
   my ($self, $channel, $nick, $ops) = @_;
   $ops ||= { op => 0, voice => 0 };
   $self->{channel_data}{$channel}{$nick} = $ops;
+  return;
 }
 
 sub _remove_from_channel {
   my ($self, $channel, $nick) = @_;
   delete $self->{channel_data}{$channel}{$nick};
+  return;
 }
 
 sub _remove_from_all_channels {
@@ -1397,6 +1427,7 @@ sub _remove_from_all_channels {
       $self->_remove_from_channel( $channel, $nick );
     }
   }
+  return;
 }
 
 =head2 topic_raw_state
@@ -1407,6 +1438,7 @@ sub topic_raw_state {
   my ($self, $kernel, $server, $raw) = @_[OBJECT, KERNEL, ARG0, ARG1];
   my ($channel, $topic) = split(/ :/, $raw, 2);
   $self->topic({ channel => $channel, who => undef, topic => $topic });
+  return;
 }
 
 =head2 topic_state
@@ -1418,6 +1450,7 @@ sub topic_state {
     = @_[OBJECT, KERNEL, ARG0, ARG1, ARG2];
   my $nick = $self->nick_strip($nickraw);
   $self->topic({ channel => $channel, who => $nick, topic => $topic });
+  return;
 }
 
 =head2 shutdown_state
@@ -1431,6 +1464,7 @@ sub shutdown_state {
     for my $fork (values %{ $self->{forks} }) {
         $fork->{wheel}->kill();
     }
+    return;
 }
 
 =head1 OTHER METHODS
@@ -1453,6 +1487,7 @@ sub AUTOLOAD {
     our $AUTOLOAD;
     $AUTOLOAD =~ s/.*:://;
     $poe_kernel->post( $self->{IRCNAME}, $AUTOLOAD, $self->charset_encode(@_) );
+    return;
 }
 
 =head2 log
@@ -1470,6 +1505,7 @@ sub log {
       chomp $log_entry;
       print STDERR "$log_entry\n";
     }
+    return;
 }
 
 =head2 ignore_nick($nick)
@@ -1480,7 +1516,7 @@ the ignore list
 =cut
 
 sub ignore_nick {
-    local $_;
+    local $_ = undef;
     my $self = shift;
     my $nick = shift;
     return grep { $nick eq $_ } @{ $self->{ignore_list} };
