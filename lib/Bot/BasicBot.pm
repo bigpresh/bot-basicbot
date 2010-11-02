@@ -1621,9 +1621,11 @@ AUTOLOAD stuff, better interactive help, and a few API tidies.
 Maintainership for a while was in the hands of Simon Kent
 E<lt>simon@hitherto.netE<gt>. Don't know what he did. :-)
 
-I recieved patches for tracking joins and parts from Silver, sat on
-them for two months, and have finally applied them. Thanks, dude. He also
+I (Tom Insam) recieved patches for tracking joins and parts from Silver, sat
+on them for two months, and have finally applied them. Thanks, dude. He also
 sent me changes for the tick event API, which made sense.
+
+In November 2010, maintainership moved to Hinrik E<Ouml>rn SigurE<eth>sson.
 
 =head1 SYSTEM REQUIREMENTS
 

@@ -1,6 +1,7 @@
 Revision history Bot::BasicBot
 
 {{$NEXT}}
+  - Maintainership moved from cpan:TOMI to cpan:HINRIK
   - Use POE::Component::IRC's Connector plugin to handle reconnects
   - Kill forks on shutdown
   - Migrate distribution to Dist::Zilla
