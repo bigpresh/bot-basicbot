@@ -158,7 +158,12 @@ sub run {
 
 =head1 STOPPING THE BOT
 
-To shut down the bot cleanly, use the L<C<quit>|/quit> method.
+To shut down the bot cleanly, use the L<C<shutdown>|/shutdown> method, which
+will (through L<C<AUTOLOAD>|/AUTOLOAD>) send an
+L<event|POE::Component::IRC/shutdown> of the same name to POE::Component::IRC,
+so it takes the same arguments:
+
+ $bot->shutdown( $bot->quit_message() );
 
 =cut
 
@@ -699,27 +704,6 @@ sub channel_data {
   return $self->{channel_data}{$channel}
 }
 
-=head2 quit( $mess )
-
-Quits from IRC and shuts down the bot cleanly. C<$mess> will be used as the
-quit message, if present.
-
-=cut
-
-sub quit {
-    my ($self, $mess) = @_;
-
-    if ($self->{IRCOBJ}->connected()) {
-        $poe_kernel->post($self->{IRCNAME}, 'quit', $mess);
-        $self->{shutting_down} = 1;
-    }
-    else {
-        $poe_kernel->post($self->{IRCNAME}, 'shutdown');
-    }
-
-    return;
-}
-
 =head1 ATTRIBUTES
 
 Get or set methods.  Changing most of these values when connected
@@ -1016,11 +1000,6 @@ Called if we are disconnected from the server. Logs the error.
 sub irc_disconnected_state {
     my ( $self, $kernel, $server ) = @_[ OBJECT, KERNEL, ARG0 ];
     $self->log("Lost connection to server $server.\n");
-
-    if ($self->{shutting_down}) {
-        $kernel->post($self->{IRCNAME}, 'shutdown');
-        delete $self->{shutting_down};
-    }
     return;
 }
 

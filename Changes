@@ -2,8 +2,9 @@ Revision history Bot::BasicBot
 
 {{$NEXT}}
   - Maintainership moved from cpan:TOMI to cpan:HINRIK
-  - Use POE::Component::IRC's Connector plugin to handle reconnects
-  - Kill forks on shutdown
+  - Use POE::Component::IRC's Connector plugin to handle reconnects. This
+    fixes the endless reconnect loop when trying to shut down the bot
+  - Kill subprocesses (e.g. those created by forkit()) on shutdown
   - Migrate distribution to Dist::Zilla
   - Eliminate bogus "NAMES HASH(0x1234567)" queries the bot was making
 
