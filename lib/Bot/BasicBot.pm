@@ -34,13 +34,11 @@ Basic bot system designed to make it easy to do simple bots, optionally
 forking longer processes (like searches) concurrently in the background.
 
 There are several examples of bots using Bot::BasicBot in the examples/
-folder in the Bot::BasicBot tarball. If you installed Bot::BasicBot through
-CPAN, see http://jerakeen.org/programming/Bot-BasicBot for more docs and
-examples.
+folder in the Bot::BasicBot tarball.
 
 A quick summary, though - You want to define your own package that
 subclasses Bot::BasicBot, override various methods (documented below),
-then call new() and run() on it.
+then call L<C<new>|/new> and L<C<run>|/run> on it.
 
 =cut
 
@@ -1451,7 +1449,8 @@ sub shutdown_state {
 =head2 AUTOLOAD
 
 Bot::BasicBot implements AUTOLOAD for sending arbitrary states to the
-underlying L<POE::Component::IRC> compoment. So for a $bot object, sending
+underlying L<POE::Component::IRC|POE::Component::IRC> component. So for a
+C<$bot> object, sending
 
     $bot->foo("bar");
 
@@ -1606,22 +1605,7 @@ sent me changes for the tick event API, which made sense.
 
 In November 2010, maintainership moved to Hinrik E<Ouml>rn SigurE<eth>sson.
 
-=head1 SYSTEM REQUIREMENTS
-
-Bot::BasicBot is based on POE, and really needs the latest version as
-of writing (0.22), since POE::Wheel::Run (used for forking) is still
-under development, and the interface recently changed. With earlier
-versions of POE, forking will not work, and the makefile process will
-carp if you have < 0.22. Sorry.
-
-You also need POE::Component::IRC.
-
 =head1 BUGS
-
-During the make, make test make install process, POE will moan about
-its kernel not being run. I'll try and gag it in future releases, but
-hey, release early, release often, and it's not a fatal error. It just
-looks untidy.
 
 Don't call your bot "0".
 
