@@ -17,4 +17,4 @@ elsif ($Perl::Critic::VERSION lt 1.108) {
 
 my $rcfile = File::Spec->catfile( 'xt', 'perlcriticrc_t' );
 Test::Perl::Critic->import( -profile => $rcfile );
-all_critic_ok(glob 't/0*');
+all_critic_ok(glob 't/*.t');
