@@ -603,9 +603,12 @@ sub say {
     my $who = ( $args->{channel} eq "msg" ) ? $args->{who} : $args->{channel};
 
     unless ( $who && $body ) {
-        print STDERR "Can't PRIVMSG without target and body\n";
-        print STDERR " called from ".([caller]->[0])." line ".([caller]->[2])."\n";
-        print STDERR " who = '$who'\n body = '$body'\n";
+        $self->log( "Can't PRIVMSG without target and body\n"
+              . " called from "
+              . ( [caller]->[0] )
+              . " line "
+              . ( [caller]->[2] ) . "\n"
+              . " who = '$who'\n body = '$body'\n" );
         return;
     }
 

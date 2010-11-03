@@ -1,6 +1,7 @@
 Revision history Bot::BasicBot
 
 {{$NEXT}}
+  - Applied patch from Mario Domgörgen to use log() for warnings (RT #51804)
 
 0.82  Wed Nov 3 02:09:36 GMT 2010
   - Maintainership moved from cpan:TOMI to cpan:HINRIK
