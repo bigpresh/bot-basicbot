@@ -6,7 +6,8 @@ Revision history Bot::BasicBot
     fixes the endless reconnect loop when trying to shut down the bot
   - Kill subprocesses (e.g. those created by forkit()) on shutdown
   - Migrate distribution to Dist::Zilla
-  - Eliminate bogus "NAMES HASH(0x1234567)" queries the bot was making
+  - Eliminate bogus "NAMES HASH(0x1234567)" queries the bot was making after
+    joining a channel
 
 0.81 2009/01/26
   - Implement remove_from_all_channels, you idiot. Sigh.
