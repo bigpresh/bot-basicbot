@@ -1382,7 +1382,7 @@ sub names_done_state {
   my $built = delete $self->{building_channel_data}{$channel};
   return unless $built;
   $self->{channel_data}{$channel} = $built;
-  #$self->names({ channel => $channel, names => $built });
+  $self->got_names({ channel => $channel, names => $built });
   return;
 }
 
