@@ -1218,7 +1218,7 @@ sub irc_received_state {
     ### what did we get back?
 
     # nothing? Say nothing then
-    return unless $return;
+    return unless defined $return;
 
     # a string?  Say it how we were addressed then
     unless ( ref($return) ) {
