@@ -1582,6 +1582,11 @@ sub charset_encode {
   return @r;
 }
 
+=head1 HELP AND SUPPORT
+
+If you have any questions or issues, you can drop by in #poe @ irc.perl.org,
+where I (Hinrik) am usually around.
+
 =head1 AUTHOR
 
 Tom Insam E<lt>tom@jerakeen.orgE<gt>
