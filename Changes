@@ -1,6 +1,8 @@
 Revision history Bot::BasicBot
 
 {{$NEXT}}
+
+0.83  Fri Nov 5 12:40:00 CET 2010
   - Applied patch from Mario Domgörgen to use log() for warnings (RT #51804)
   - Only ignore said() when it returns undef/empty list, not false
   - got_names was never getting called. Fixed that.
