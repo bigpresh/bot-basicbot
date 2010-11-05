@@ -1,7 +1,9 @@
-#!perl
+#!/usr/bin/env perl
 use warnings;
 use strict;
 use Test::More;
+
+plan skip_all => 'This test should use POE::Component::Server::IRC';
 
 use lib qw(lib t/lib);
 
