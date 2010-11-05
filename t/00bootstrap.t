@@ -1,11 +1,53 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 use warnings;
 use strict;
-use lib qw(./lib);
+use Test::More tests => 2;
 
-use Test::More tests => 1;
+BEGIN { use_ok('Bot::BasicBot') };
+my @methods = qw(
+    new
+    run
 
-use_ok('Bot::BasicBot');
+    init
+    said
+    emoted
+    chanjoin
+    chanpart
+    got_names
+    topic
+    nick_change
+    kicked
+    tick
+    help
+    connected
+    userquit
 
-# Yes, I _know_. Tell you what, _you_ come up with a good way to test an IRC
-# bot, and tell me, and I'll write some tests.
+    schedule_tick
+    forkit
+    say
+    emote
+    reply
+    channel_data
+
+    server
+    port
+    password
+    ssl
+    nick
+    alt_nicks
+    username
+    name
+    channels
+    quit_message
+    ignore_list
+    charset
+    flood
+
+    AUTOLOAD
+    log
+    ignore_nick
+    nick_strip
+    charset_decode
+    charset_encode
+);
+can_ok('Bot::BasicBot', @methods);
