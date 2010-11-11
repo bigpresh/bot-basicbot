@@ -1,6 +1,7 @@
 Revision history Bot::BasicBot
 
 {{$NEXT}}
+  - Ignore empty strings returned by said()
 
 0.83  Fri Nov 5 12:40:00 CET 2010
   - Applied patch from Mario Domgörgen to use log() for warnings (RT #51804)

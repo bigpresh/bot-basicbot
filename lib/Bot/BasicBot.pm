@@ -1221,7 +1221,7 @@ sub irc_received_state {
     return unless defined $return;
 
     # a string?  Say it how we were addressed then
-    unless ( ref($return) ) {
+    unless ( ref($return) || !length($return) ) {
         $mess->{body} = $return;
         $self->$respond($mess);
         return;
