@@ -63,9 +63,9 @@ our @EXPORT  = qw( say emote );
 
 =head1 STARTING THE BOT
 
-=head2 new( key => value, .. )
+=head2 new
 
-Creates a new instance of the class.  Name value pairs may be passed
+Creates a new instance of the class. Key/value pairs may be passed
 which will have the same effect as calling the method of that name
 with the value supplied. Returns a Bot::BasicBot object, that you can
 call 'run' on later.
@@ -171,7 +171,7 @@ In your Bot::BasicBot subclass, you want to override some of the following
 methods to define how your bot works. These are all object methods - the
 (implicit) first parameter to all of them will be the bot object.
 
-=head2 init()
+=head2 init
 
 called when the bot is created, as part of new(). Override to provide
 your own init. Return a true value for a successful init, or undef if
@@ -182,7 +182,7 @@ you failed, in which case new() will die.
 sub init { return 1; }
 
 
-=head2 said($args)
+=head2 said
 
 This is the main method that you'll want to override in your subclass -
 it's the one called by default whenever someone says anything that we
@@ -236,7 +236,7 @@ Returning undef will cause nothing to be said.
 
 sub said { return }
 
-=head2 emoted( $args )
+=head2 emoted
 
 This is a secondary method that you may wish to override. It gets called
 when someone in channel 'emotes', instead of talking. In its default
@@ -251,11 +251,11 @@ sub emoted {
     return shift->said(@_);
 }
 
-=head2 chanjoin( $mess )
+=head2 chanjoin
 
-Called when someone joins a channel. $mess is an object similar to a
-said() message, $mess->{who} is the nick of the user who joined,
-$mess->{channel} is the channel they joined.
+Called when someone joins a channel. It receives a hashref argument similar to
+the one received by said(). The key 'who' is the nick of the user who joined,
+while 'channel' is the channel they joined.
 
 This is a do-nothing implementation, override this in your subclass.
 
@@ -263,11 +263,11 @@ This is a do-nothing implementation, override this in your subclass.
 
 sub chanjoin { return }
 
-=head2 chanpart( $mess )
+=head2 chanpart
 
-Called when someone leaves a channel. $mess is an object similar to a
-said() message, $mess->{who} is the nick of the user who left,
-$mess->{channel} is the channel they left.
+Called when someone joins a channel. It receives a hashref argument similar to
+the one received by said(). The key 'who' is the nick of the user who parted,
+while 'channel' is the channel they parted.
 
 This is a do-nothing implementation, override this in your subclass.
 
@@ -275,14 +275,14 @@ This is a do-nothing implementation, override this in your subclass.
 
 sub chanpart { return }
 
-=head2 got_names( $mess )
+=head2 got_names
 
 Whenever we have been given a definitive list of 'who is in the channel',
-this function will be called. As usual, $mess is a hash. $mess->{channel}
-will be the channel we have information for, $mess->{names} is a hashref,
-where the keys are the nicks of the users, and the values are more hashes,
-containing the two keys 'op' and 'voice', indicating if the user is a chanop
-or voiced respectively.
+this function will be called. It receives a hash reference as an argument.
+The key 'channel' will be the channel we have information for, 'names' is a
+hashref where the keys are the nicks of the users, and the values are more
+hashes, containing the two keys 'op' and 'voice', indicating if the user is
+a chanop or voiced respectively.
 
 The reply value is ignored.
 
@@ -296,19 +296,21 @@ method won't be called when that happens.
 
 sub got_names { return }
 
-=head2 topic( $mess )
+=head2 topic
 
-Called when the topic of the channel changes. $mess->{channel} is the channel
-the topic was set in, $mess->{who} is the nick of the user who changed the
-channel, and $mess->{topic} will be the new topic of the channel.
+Called when the topic of the channel changes. It receives a hashref argument.
+The key 'channel' is the channel the topic was set in, and 'who' is the nick
+of the user who changed the channel, 'topic' will be the new topic of the
+channel.
 
 =cut
 
 sub topic { return }
 
-=head2 nick_change( $mess )
+=head2 nick_change
 
-When a user changes nicks, this will be called. $mess looks like
+When a user changes nicks, this will be called. It receives a hashref which
+will look like this:
 
   { from => "old_nick",
     to => "new_nick",
@@ -318,9 +320,10 @@ When a user changes nicks, this will be called. $mess looks like
 
 sub nick_change { return }
 
-=head2 kicked( $mess )
+=head2 kicked
 
-Called when a user is kicked from the channel. $mess looks like:
+Called when a user is kicked from the channel. It receives a hashref which
+will look like this:
 
   { channel => "#channel",
     who => "nick",
@@ -375,9 +378,9 @@ to the server
 
 sub connected { return }
 
-=head2 userquit( $mess )
+=head2 userquit
 
-$mess looks like
+Receives a hashref which will look like:
 
     { who => "nick that quit",
       body => "quit message",
@@ -396,12 +399,12 @@ sub userquit {
 There are a few methods you can call on the bot object to do things. These
 are as follows:
 
-=head2 schedule_tick(time)
+=head2 schedule_tick
 
-Causes the L<tick> event to be called in 'time' seconds (or 5 seconds if
-time is left unspecified). Note that if the tick event is due to be
-called already, this will override it, you can't schedule multiple
-future events with this funtction.
+Takes an integer as an argument. Causes the L<tick> event to be called after
+that many seconds (or 5 seconds if no argument is provided). Note that if the
+tick event is due to be called already, this will override it. You can't
+schedule multiple future events with this funtction.
 
 =cut
 
@@ -538,9 +541,10 @@ sub _fork_said {
     return;
 }
 
-=head2 say( key => value, .. )
+=head2 say
 
-Say something to someone.  You should pass the following arguments:
+Say something to someone. Takes a list of key/value pairs as arguments. You
+should pass the following arguments:
 
 =over 4
 
@@ -630,7 +634,7 @@ sub say {
     return;
 }
 
-=head2 emote( key => value, .. )
+=head2 emote
 
 C<emote> will return data to channel, but emoted (as if you'd said "/me
 writes a spiffy new bot" in most clients). It takes the same arguments
@@ -676,12 +680,15 @@ sub emote {
     return;
 }
 
-=head2 reply($mess, $body)
+=head2 reply
 
-Reply to a message $mess. Will reply to an incoming message
-with the text '$body', in a privmsg if $mess was a privmsg, in channel if
-not, and prefixes if $mess was prefixed. Mostly a shortcut method - it's
-roughly equivalent to $mess->{body} = $body; $self->say($mess);
+Takes two arguments, a hashref containing information about an incoming
+message, and a reply message. It will reply in a privmsg if the incoming one
+was a privmsg, in channel if not, and with prefixes if the incoming one was
+prefixed. Mostly a shortcut method - it's roughly equivalent to
+
+ $mess->{body} = $body;
+ $self->say($mess);
 
 =cut
 
@@ -1518,7 +1525,7 @@ sub nick_strip {
     return $nick;
 }
 
-=head2 charset_decode( foo, bar, baz )
+=head2 charset_decode
 
 Converts a string of bytes into a perl string, using the bot's L<charset>.
 (under perls before 5.8, just returns the thing it's passed.
@@ -1556,7 +1563,7 @@ sub charset_decode {
   return @r;
 }
 
-=head2 charset_encode( foo, bar, baz )
+=head2 charset_encode
 
 Converts a list of perl strings into a list of byte sequences, using
 the bot's charset. See L<charset_decode>.
