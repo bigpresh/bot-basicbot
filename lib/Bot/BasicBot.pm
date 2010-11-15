@@ -623,12 +623,17 @@ sub say {
     # I think the Text::Wrap docs lie - it doesn't do anything special
     # in list context
     my @bodies = split(/\n+/, $wrapped);
-    
+
+    # Allows to override the default "PRIVMSG". Used by notice()
+    my $irc_command = exists $args->{irc_command}
+        ? $args->{irc_command}
+        : 'privmsg';
+
     # post an event that will send the message
     for my $body (@bodies) {
         my ($enc_who, $enc_body) = $self->charset_encode($who, $body);
         #warn "$enc_who => $enc_body\n";
-        $poe_kernel->post( $self->{IRCNAME}, 'privmsg', $enc_who, $enc_body );
+        $poe_kernel->post( $self->{IRCNAME}, $irc_command, $enc_who, $enc_body );
     }
 
     return;
@@ -678,6 +683,47 @@ sub emote {
 
     $poe_kernel->post( $self->{IRCNAME}, 'privmsg', $self->charset_encode($who, "\cAACTION " . $body . "\cA") );
     return;
+}
+
+=head2 notice
+
+C<notice> will send a IRC notice to the channel. This is typically used by bots
+to not break the IRC conversations flow. The message will appear as:
+
+    -nick- message here
+
+It takes the same arguments as C<say>, listed above. Example:
+
+    $bot->notice(
+        channel => '#bot_basicbot_test',
+        body => 'This is a notice'
+    );
+
+=cut
+
+sub notice {
+
+    if ( !ref( $_[0] ) ) {
+        print $_[0] . "\n";
+        return 1;
+    }
+    
+    my $self = shift;
+    my $args;
+    if (ref($_[0])) {
+        $args = shift;
+    } else {
+        my %args = @_;
+        $args = \%args;
+    }
+
+    # Don't modify '$args' hashref in-place, or we might
+    # make all subsequent calls into notices
+    return $self->say(
+        %{ $args },
+        irc_command => 'notice'
+    );
+
 }
 
 =head2 reply

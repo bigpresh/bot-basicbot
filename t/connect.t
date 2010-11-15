@@ -15,7 +15,7 @@ my $s = IO::Socket::INET->new(
 
 if ($s) {
   close($s);
-  plan tests => 3;
+  plan tests => 4;
 } else {
   plan skip_all => "no net connection available";
   exit;
