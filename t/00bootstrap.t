@@ -25,6 +25,7 @@ my @methods = qw(
     schedule_tick
     forkit
     say
+    notice
     emote
     reply
     channel_data

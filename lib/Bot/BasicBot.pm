@@ -607,7 +607,7 @@ sub say {
     my $who = ( $args->{channel} eq "msg" ) ? $args->{who} : $args->{channel};
 
     unless ( $who && $body ) {
-        $self->log( "Can't PRIVMSG without target and body\n"
+        $self->log( "Can't send a message without target and body\n"
               . " called from "
               . ( [caller]->[0] )
               . " line "
@@ -625,8 +625,8 @@ sub say {
     my @bodies = split(/\n+/, $wrapped);
 
     # Allows to override the default "PRIVMSG". Used by notice()
-    my $irc_command = exists $args->{irc_command}
-        ? $args->{irc_command}
+    my $irc_command = defined $args->{irc_command} && $args->{irc_command} eq 'notice'
+        ? 'notice'
         : 'privmsg';
 
     # post an event that will send the message
