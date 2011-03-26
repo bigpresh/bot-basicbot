@@ -2,6 +2,9 @@ Revision history Bot::BasicBot
 
 {{$NEXT}}
 
+0.85
+  - Document the 'no_run' attribute and add a getter/setter for it
+
 0.84  Mon Nov 15 20:05:09 GMT 2010
   - Ignore empty strings returned by said()
   - Adjust the method documentation a bit to avoid confusion

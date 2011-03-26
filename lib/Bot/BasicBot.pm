@@ -965,6 +965,19 @@ sub flood {
     return $self->{flood};
 }
 
+=head2 no_run
+
+Tells Bot::BasicBot to B<not> run the L<POE kernel|POE::Kernel> at the end
+of L<C<run>|/run>, in case you want to do that yourself.
+
+=cut
+
+sub no_run {
+    my $self = shift;
+    $self->{no_run} = shift if @_;
+    return $self->{no_run};
+}
+
 =head1 STATES
 
 These are the POE states that we register in order to listen for IRC
