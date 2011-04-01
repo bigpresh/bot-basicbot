@@ -1,6 +1,8 @@
 Revision history Bot::BasicBot
 
 {{$NEXT}}
+  - Add noticed(), which is like said() but for notices
+  - Depend on POE::Component::IRC 6.56 for a notice-related fix
 
 0.85  Fri Apr 1 18:49:45 GMT 2011
   - Document the 'no_run' attribute and add a getter/setter for it
