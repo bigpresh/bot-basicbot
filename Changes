@@ -3,8 +3,6 @@ Revision history Bot::BasicBot
 {{$NEXT}}
 
 0.85  Fri Apr 1 18:49:45 GMT 2011
-
-0.85
   - Document the 'no_run' attribute and add a getter/setter for it
   - Added a pocoirc() method which returns the underlying pocoirc object
   - Switched the backend from POE::Component::IRC to P::C::I::State
