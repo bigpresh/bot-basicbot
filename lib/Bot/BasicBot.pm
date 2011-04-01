@@ -14,12 +14,12 @@ Bot::BasicBot - simple irc bot baseclass
     server => "irc.example.com",
     port   => "6667",
     channels => ["#bottest"],
-    
+
     nick      => "basicbot",
     alt_nicks => ["bbot", "simplebot"],
     username  => "bot",
     name      => "Yet Another Bot",
-    
+
     ignore_list => [qw(dipsy dadadodo laotse)],
 
     charset => "utf-8", # charset the bot assumes the channel is using
@@ -53,7 +53,7 @@ use POE::Kernel;
 use POE::Session;
 use POE::Wheel::Run;
 use POE::Filter::Line;
-use POE::Component::IRC;
+use POE::Component::IRC::State;
 use POE::Component::IRC::Plugin::Connector;
 use Data::Dumper;
 use Text::Wrap ();
@@ -113,7 +113,7 @@ sub run {
         object_states => [
             $self => {
                 _start => "start_state",
-                _stop  => "stop_state",
+                die    => "die_state",
 
                 irc_001          => "irc_001_state",
                 irc_msg          => "irc_said_state",
@@ -127,20 +127,18 @@ sub run {
                 irc_part         => "irc_chanpart_state",
                 irc_kick         => "irc_kicked_state",
                 irc_nick         => "irc_nick_state",
-                irc_mode         => "irc_mode_state",
                 irc_quit         => "irc_quit_state",
 
                 fork_close       => "fork_close_state",
                 fork_error       => "fork_error_state",
 
-                irc_353          => "names_state",
                 irc_366          => "names_done_state",
 
                 irc_332          => "topic_raw_state",
                 irc_topic        => "topic_state",
 
                 irc_shutdown     => "shutdown_state",
-                
+
                 tick => "tick_state",
             }
         ]
@@ -738,6 +736,19 @@ prefixed. Mostly a shortcut method - it's roughly equivalent to
 
 =cut
 
+=head2 pocoirc
+
+Takes no arguments. Returns the underlying
+L<POE::Component::IRC::State|POE::Component::IRC::State> object used by
+Bot::BasicBot.
+
+=cut
+
+sub pocoirc {
+    my $self = shift;
+    return $self->{IRCOBJ};
+}
+
 sub reply {
     my $self = shift;
     my ($mess, $body) = @_;
@@ -746,16 +757,30 @@ sub reply {
     return $self->say(%hash);
 }
 
-
-
 =head2 channel_data
+
+Takes a channel names as a parameter, and returns a hash of hashes. The keys
+are the nicknames in the channel, the values are hashes containing the keys
+"voice" and "op", indicating whether these users are voiced or opped in the
+channel. This method is only here for backwards compatability. You'll probably
+get more use out of L<POE::Component::IRC::State|POE::Component::IRC::State>'s
+methods (which this method is merely a wrapper for). You can access the
+POE::Component::IRC::State object through Bot::BasicBot's C<pocoirc> method.
 
 =cut
 
 sub channel_data {
   my $self = shift;
   my $channel = shift or return;
-  return $self->{channel_data}{$channel}
+  my $channels = $self->{IRCOBJ}->channels();
+  return if !exists $channels->{$channel};
+
+  return { map {
+      $_ => {
+        op    => $self->{IRCOBJ}->is_channel_operator($channel, $_) || 0,
+        voice => $self->{IRCOBJ}->has_channel_voice($channel, $_) || 0,
+      }
+  } $self->{IRCOBJ}->channel_list($channel) };
 }
 
 =head1 ATTRIBUTES
@@ -978,20 +1003,9 @@ sub no_run {
     return $self->{no_run};
 }
 
-=head1 STATES
-
-These are the POE states that we register in order to listen for IRC
-events. For the most part you don't need to worry about these, unless
-you want to override them to do something clever.
-
-=head2 start_state
-
-Called when we start.  Used to fire a "connect to irc server event"
-
-=cut
-
 sub start_state {
     my ( $self, $kernel, $session ) = @_[ OBJECT, KERNEL, SESSION ];
+    $kernel->sig(DIE => 'die');
     $self->{kernel} = $kernel;
     $self->{session} = $session;
 
@@ -999,7 +1013,7 @@ sub start_state {
     $kernel->alias_set($self->{ALIASNAME});
     $kernel->delay('tick', 30);
 
-    $self->{IRCOBJ} = POE::Component::IRC->spawn( alias => $self->{IRCNAME} );
+    $self->{IRCOBJ} = POE::Component::IRC::State->spawn( alias => $self->{IRCNAME} );
     $self->{IRCOBJ}->plugin_add('Connector', POE::Component::IRC::Plugin::Connector->new());
     $kernel->post( $self->{IRCNAME}, 'register', 'all' );
 
@@ -1023,22 +1037,13 @@ sub start_state {
     return;
 }
 
-=head2 stop_state
-
-Called when we're stopping.  Shutdown the bot correctly.
-
-=cut
-
-sub stop_state { }
-
-=head2 irc_001_state
-
-Called when we connect to the irc server.  This is used to tell
-the irc server that we'd quite like to join the channels.
-
-We also ignore ourselves.  We don't want to hear what we have to say.
-
-=cut
+sub die_state {
+    my ($kernel, $self, $ex) = @_[KERNEL, OBJECT, ARG1];
+    warn $ex->{error_str};
+    $self->{IRCOBJ}->yield('shutdown');
+    $kernel->sig_handled();
+    return;
+}
 
 sub irc_001_state {
     my ( $self, $kernel ) = @_[ OBJECT, KERNEL ];
@@ -1058,38 +1063,17 @@ sub irc_001_state {
     return;
 }
 
-=head2 irc_disconnected_state
-
-Called if we are disconnected from the server. Logs the error.
-
-=cut
-
 sub irc_disconnected_state {
     my ( $self, $kernel, $server ) = @_[ OBJECT, KERNEL, ARG0 ];
     $self->log("Lost connection to server $server.\n");
     return;
 }
 
-=head2 irc_error_state
-
-Called if there is an irc server error. Logs the error.
-
-=cut
-
 sub irc_error_state {
     my ( $self, $err, $kernel ) = @_[ OBJECT, ARG0, KERNEL ];
     $self->log("Server error occurred! $err\n");
     return;
 }
-
-=head2 irc_kicked_state
-
-Called on kick.  If we're kicked then it's best to do
-nothing.  Bots are normally called in wrapper that restarts them
-if we die, which may end us up in a busy loop.  Anyway, if we're not
-wanted, the best thing to do would be to hang around off channel.
-
-=cut
 
 sub irc_kicked_state {
     my ($self, $kernel, $heap, $session) = @_[OBJECT, KERNEL, HEAP, SESSION];
@@ -1100,121 +1084,36 @@ sub irc_kicked_state {
     return;
 }
 
-=head2 irc_join_state
-
-Called if someone joins.  Used for nick tracking
-
-=cut
-
 sub irc_join_state {
     my ( $self, $nick ) = @_[ OBJECT, ARG0 ];
     return;
 }
 
-=head2 irc_nick_state
-
-Called if someone changes nick.  Used for nick tracking.
-
-=cut
-
 sub irc_nick_state {
     my ( $self, $nick, $newnick ) = @_[ OBJECT, ARG0, ARG1 ];
     $nick = $self->nick_strip($nick);
-    for my $channel (keys( %{ $self->{channel_data} } )) {
-        $self->{channel_data}{$channel}{$newnick}
-          = delete $self->{channel_data}{$channel}{$nick};
-    }
     $self->nick_change($nick, $newnick);
     return;
 }
-
-=head2 irc_mode_state
-
-=cut
-
-## no critic (ControlStructures::ProhibitCascadingIfElse)
-sub irc_mode_state {
-    my ($self, $kernel, $session) = @_[OBJECT, KERNEL, SESSION];
-    my ($nickstring, $channel, $mode, @ops) = @_[ARG0..$#_];
-    my $nick = $self->nick_strip($nickstring);
-    $mode =~ s/^(.)//;
-    my $added = $1 eq '+' ? 1 : 0;
-    my @modes = split(//, $mode);
-    for my $who (@ops) {
-        my $current = $self->{channel_data}{$channel}{$who};
-
-        my $op = shift(@modes);
-
-        if ($added && $op eq 'o') {
-          $current->{op} = 1;
-          $current->{voice} = 0;
-
-        } elsif ($added && $op eq 'v') {
-          $current->{voice} = 1 unless $current->{op};
-
-        } elsif (!$added && $op eq 'o') {
-          $current->{op} = 0;
-          $current->{voice} = 0;
-
-        } elsif (!$added && $op eq 'v') {
-          $current->{voice} = 1 unless $current->{op};
-        }
-
-        $self->{channel_data}{$channel}{$who} = $current;
-    }
-    return;
-}
-
-
-=head2 irc_quit_state
-
-=cut
 
 sub irc_quit_state {
     my ($self, $kernel, $session) = @_[OBJECT, KERNEL, SESSION];
     my ($nick, $message) = @_[ARG0..$#_];
 
     $nick = $self->nick_strip($nick);
-
     $self->userquit({ who => $nick, body => $message });
-
-    # do this second, so that the userquit implementor has a chance to see
-    # which channels they left
-    $self->_remove_from_all_channels( $nick );
     return;
 }
-
-=head2 irc_said_state
-
-Called if we recieve a private or public message.  This
-formats it into a nicer format and calls 'said'
-
-=cut
 
 sub irc_said_state {
     irc_received_state( 'said', 'say', @_ );
     return;
 }
 
-=head2 irc_emoted_state
-
-Called if someone "emotes" on channel, rather than directly saying
-something. Currently passes the emote striaght to C<irc_said_state>
-which deals with it as if it was a spoken phrase.
-
-=cut
-
 sub irc_emoted_state {
     irc_received_state( 'emoted', 'emote', @_ );
     return;
 }
-
-=head2 irc_received_state
-
-Called by C<irc_said_state> and C<irc_emoted_state> in order to format
-channel input into a more copable-with format.
-
-=cut
 
 sub irc_received_state {
     my $received = shift;
@@ -1287,18 +1186,12 @@ sub irc_received_state {
     return unless defined $return;
 
     # a string?  Say it how we were addressed then
-    unless ( ref($return) || !length($return) ) {
+    if (!ref $return && length $return) {
         $mess->{body} = $return;
         $self->$respond($mess);
         return;
     }
 }
-
-=head2 irc_chanjoin_state
-
-Called if someone joins a channel.
-
-=cut
 
 sub irc_chanjoin_state {
     my $self = $_[OBJECT];
@@ -1309,16 +1202,9 @@ sub irc_chanjoin_state {
       push @channels, $channel unless grep { $_ eq $channel }  @channels;
       $self->channels(\@channels);
     }
-    $_[OBJECT]->_add_to_channel( $channel, $nick );
     irc_chan_received_state( 'chanjoin', 'say', @_ );
     return;
 }
-
-=head2 irc_chanpart_state
-
-Called if someone parts a channel.
-
-=cut
 
 sub irc_chanpart_state {
     my $self = $_[OBJECT];
@@ -1329,17 +1215,9 @@ sub irc_chanpart_state {
       @channels = grep { $_ ne $channel } @channels;
       $self->channels(\@channels);
     }
-    $_[OBJECT]->_remove_from_channel( $channel, $nick );
     irc_chan_received_state( 'chanpart', 'say', @_ );
     return;
 }
-
-=head2 irc_chan_received_state
-
-Called by C<irc_chanjoin_state> and C<irc_chanpart_state> in order to format
-channel joins and parts into a more copable-with format.
-
-=cut
 
 sub irc_chan_received_state {
     my $received = shift;
@@ -1373,36 +1251,13 @@ sub irc_chan_received_state {
 }
 
 
-=head2 fork_close_state
-
-Called whenever a process forked by L<POE::Wheel::Run> (in C<forkit>)
-terminates, and allows us to delete the object and associated data
-from memory.
-
-=cut
-
 sub fork_close_state {
     my ( $self, $wheel_id ) = @_[ 0, ARG0 ];
     delete $self->{forks}->{$wheel_id};
     return;
 }
 
-=head2 fork_error_state
-
-Called if a process forked by L<POE::Wheel::Run> (in C<forkit>) hits
-an error condition for any reason. Does nothing, but can be overloaded
-in derived classes to be more useful
-
-=cut
-
 sub fork_error_state { }
-
-=head2 tick_state
-
-the POE state for the tick event. Reschedules a tick event for the future
-if the tick method returned a value.
-
-=cut
 
 sub tick_state {
     my ( $self, $kernel, $heap ) = @_[ OBJECT, KERNEL, HEAP ];
@@ -1411,74 +1266,12 @@ sub tick_state {
     return;
 }
 
-=head2 names_state
-
-=cut
-
-sub names_state {
-  my ($self, $kernel, $server, $message) = @_[OBJECT, KERNEL, ARG0, ARG1];
-  my (undef, $channel, @names) = split(/\s/, $message);
-  $names[0] =~ s/^\://; # FFS
-
-  # while we get names responses, build an 'in progress' list of people.
-  my $building = $self->{building_channel_data}{$channel} ||= {};
-
-  for my $nick (@names) {
-    my ($op, $voice);
-    $op = ($nick =~ s/^@//) ? 1 : 0;
-    $voice = ($nick =~ s/^\+//) ? 1 : 0;
-    $building->{$nick} = {
-      op => $op,
-      voice => $voice,
-    }
-  }
-  return;
-}
-
-=head2 names_done_state
-
-=cut
-
 sub names_done_state {
   my ($self, $kernel, $server, $message) = @_[OBJECT, KERNEL, ARG0, ARG1];
   my ($channel) = split(/\s/, $message);
-
-  # we have the complete list of names in the channel. Remove the 'in progress'
-  # list, and put it as the definitive 'list of people'.
-  my $built = delete $self->{building_channel_data}{$channel};
-  return unless $built;
-  $self->{channel_data}{$channel} = $built;
-  $self->got_names({ channel => $channel, names => $built });
+  $self->got_names({ channel => $channel, names => $self->channel_data($channel) });
   return;
 }
-
-
-sub _add_to_channel {
-  my ($self, $channel, $nick, $ops) = @_;
-  $ops ||= { op => 0, voice => 0 };
-  $self->{channel_data}{$channel}{$nick} = $ops;
-  return;
-}
-
-sub _remove_from_channel {
-  my ($self, $channel, $nick) = @_;
-  delete $self->{channel_data}{$channel}{$nick};
-  return;
-}
-
-sub _remove_from_all_channels {
-  my ($self, $nick) = @_;
-  for my $channel (keys %{ $self->{channel_data} }) {
-    if ( $self->{channel_data}{$channel}{$nick} ) {
-      $self->_remove_from_channel( $channel, $nick );
-    }
-  }
-  return;
-}
-
-=head2 topic_raw_state
-
-=cut
 
 sub topic_raw_state {
   my ($self, $kernel, $server, $raw) = @_[OBJECT, KERNEL, ARG0, ARG1];
@@ -1487,10 +1280,6 @@ sub topic_raw_state {
   return;
 }
 
-=head2 topic_state
-
-=cut
-
 sub topic_state {
   my ($self, $kernel, $nickraw, $channel, $topic)
     = @_[OBJECT, KERNEL, ARG0, ARG1, ARG2];
@@ -1498,10 +1287,6 @@ sub topic_state {
   $self->topic({ channel => $channel, who => $nick, topic => $topic });
   return;
 }
-
-=head2 shutdown_state
-
-=cut
 
 sub shutdown_state {
     my ($kernel, $self) = @_[KERNEL, OBJECT];

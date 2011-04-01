@@ -4,6 +4,11 @@ Revision history Bot::BasicBot
 
 0.85
   - Document the 'no_run' attribute and add a getter/setter for it
+  - Added a pocoirc() method which returns the underlying pocoirc object
+  - Switched the backend from POE::Component::IRC to P::C::I::State
+  - Print a warning and shut down if our session gets an exception
+  - Document the channel_data() method
+  - Depend on POE::Component::IRC 6.55
 
 0.84  Mon Nov 15 20:05:09 GMT 2010
   - Ignore empty strings returned by said()
