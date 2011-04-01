@@ -346,7 +346,7 @@ The reply value is ignored.
 
 sub kicked { return }
 
-=head2 tick()
+=head2 tick
 
 This is an event called every regularly. The function should return the
 amount of time until the tick event should next be called. The default
@@ -1356,10 +1356,10 @@ sub log {
     return;
 }
 
-=head2 ignore_nick($nick)
+=head2 ignore_nick
 
-Return true if this nick should be ignored.  Ignores anything in
-the ignore list
+Takes a nick name as an argument. Return true if this nick should be ignored.
+Ignores anything in the ignore list
 
 =cut
 
