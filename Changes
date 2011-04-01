@@ -1,6 +1,8 @@
 Revision history Bot::BasicBot
 
 {{$NEXT}}
+
+0.86  Fri Apr 1 20:06:08 GMT 2011
   - Add noticed(), which is like said() but for notices
   - Depend on POE::Component::IRC 6.56 for a notice-related fix
 
