@@ -8,7 +8,7 @@ Revision history Bot::BasicBot
   - Switched the backend from POE::Component::IRC to P::C::I::State
   - Print a warning and shut down if our session gets an exception
   - Document the channel_data() method
-  - Depend on POE::Component::IRC 6.55
+  - Depend on POE::Component::IRC 6.55 for a NAMES-related bugfix
 
 0.84  Mon Nov 15 20:05:09 GMT 2010
   - Ignore empty strings returned by said()
