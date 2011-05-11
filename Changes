@@ -1,6 +1,8 @@
 Revision history Bot::BasicBot
 
 {{$NEXT}}
+  - Make charset_decode() use IRC::Utils::decode_irc() internally
+  - Make utf8 the default outgoing message encoding
 
 0.86  Fri Apr 1 20:06:08 GMT 2011
   - Add noticed(), which is like said() but for notices

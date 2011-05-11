@@ -4,8 +4,9 @@ use strict;
 use warnings;
 
 use Carp;
-use Encode ();
+use Encode qw(encode);
 use Exporter;
+use IRC::Utils qw(decode_irc);
 use POE::Kernel;
 use POE::Session;
 use POE::Wheel::Run;
@@ -35,6 +36,7 @@ sub new {
             #croak "Invalid argument '$method'";
         }
     }
+    $self->{charset} = 'utf8' if !defined $self->{charset};
 
     $self->init or die "init did not return a true value - dying";
 
@@ -454,7 +456,7 @@ sub charset {
     if (@_) {
         $self->{charset} = shift;
     }
-    return $self->{charset} || "iso-8859-1";
+    return $self->{charset};
 }
 
 sub flood {
@@ -857,7 +859,7 @@ sub charset_decode {
             die "Can't decode object $_\n";
         }
         else {
-            push @r, Encode::decode($self->charset, $_, 0);
+            push @r, decode_irc($_);
         }
     }
     #warn Dumper({ decoded => \@r });
@@ -879,7 +881,7 @@ sub charset_encode {
             die "Can't encode object $_\n";
         }
         else {
-            push @r, Encode::encode($self->charset, $_);
+            push @r, encode($self->charset, $_);
         }
     }
     #warn Dumper({ encoded => \@r });
@@ -911,8 +913,6 @@ Bot::BasicBot - simple irc bot baseclass
     name      => "Yet Another Bot",
 
     ignore_list => [qw(dipsy dadadodo laotse)],
-
-    charset => "utf-8", # charset the bot assumes the channel is using
 
   );
   $bot->run();
@@ -1356,11 +1356,8 @@ other bots.)  Useful for stopping bot cascades.
 =head2 C<charset>
 
 IRC has no defined character set for putting high-bit chars into channel.
-In general, people tend to assume latin-1, but in case your channel thinks
-differently, the bot can be told about different charsets.
-
-This feature requires perl 5.8+, I'm not fannying about with charsets
-under any other version of perl.
+This attribute sets the encoding to be used for outgoing messages. Defaults
+to 'utf8'.
 
 =head2 C<flood>
 
@@ -1403,13 +1400,12 @@ returns just the nick
 
 =head2 C<charset_decode>
 
-Converts a string of bytes into a perl string, using the bot's L<charset>.
-(under perls before 5.8, just returns the thing it's passed.
+Converts a string of bytes from IRC (uses
+L<C<decode_irc>|IRC::Utils/decode_irc> from L<IRC::Utils|IRC::Utils>
+internally) and returns a Perl string.
 
-Takes a list of strings, returns a list of strings, this is useful in the
-contexts that I tend to be calling it from. Bytes that cannot be decoded are
-converted to '?' symbols - see
-http://search.cpan.org/~dankogai/Encode-2.09/Encode.pm#Handling_Malformed_Data
+It can also takes a list (or arrayref or hashref) of strings, and return
+a list of strings
 
 =head2 C<charset_encode>
 
