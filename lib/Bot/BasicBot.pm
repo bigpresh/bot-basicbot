@@ -12,7 +12,6 @@ use POE::Wheel::Run;
 use POE::Filter::Line;
 use POE::Component::IRC::State;
 use POE::Component::IRC::Plugin::Connector;
-use Data::Dumper;
 use Text::Wrap ();
 
 use base 'Exporter';
