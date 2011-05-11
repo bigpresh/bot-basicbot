@@ -99,7 +99,7 @@ sub new {
     return $self;
 }
 
-=head2 run()
+=head2 run
 
 Runs the bot.  Hands the control over to the POE core.
 
