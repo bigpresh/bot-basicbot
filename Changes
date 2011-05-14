@@ -1,6 +1,8 @@
 Revision history Bot::BasicBot
 
 {{$NEXT}}
+
+0.87  Sat May 14 18:48:55 GMT 2011
   - Make charset_decode() use IRC::Utils::decode_irc() internally
   - Make utf8 the default outgoing message encoding
 
