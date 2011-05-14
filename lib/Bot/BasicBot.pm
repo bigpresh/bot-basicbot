@@ -493,7 +493,6 @@ sub start_state {
         $self->{IRCNAME},
         'connect',
         {
-            Debug    => 0,
             Nick     => $self->nick,
             Server   => $self->server,
             Port     => $self->port,
