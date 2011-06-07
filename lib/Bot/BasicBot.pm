@@ -1063,7 +1063,7 @@ want to be able to do something as soon as possible. Also be aware that
 the names list can be changed by other events - kicks, joins, etc, and this
 method won't be called when that happens.
 
-=head2 C<topic<
+=head2 C<topic>
 
 Called when the topic of the channel changes. It receives a hashref
 argument. The key 'channel' is the channel the topic was set in, and 'who'
@@ -1116,7 +1116,7 @@ should be considered a special case which you should not attempt to
 process yourself.  Saying help to a bot should have no side effects
 whatsoever apart from returning this text.
 
-=head2 C<connected<
+=head2 C<connected>
 
 An optional method to override, gets called after we have connected
 to the server
