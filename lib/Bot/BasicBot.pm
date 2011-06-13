@@ -1440,7 +1440,8 @@ I (Tom Insam) recieved patches for tracking joins and parts from Silver,
 sat on them for two months, and have finally applied them. Thanks, dude.
 He also sent me changes for the tick event API, which made sense.
 
-In November 2010, maintainership moved to Hinrik E<Ouml>rn SigurE<eth>sson.
+In November 2010, maintainership moved to Hinrik E<Ouml>rn
+SigurE<eth>sson (L<hinrik.sig@gmail.com>).
 
 =head1 SEE ALSO
 
