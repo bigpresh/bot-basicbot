@@ -819,6 +819,9 @@ sub AUTOLOAD {
     return;
 }
 
+# so it won't get AUTOLOADed
+sub DESTROY { return }
+
 sub log {
     my $self = shift;
     for (@_) {

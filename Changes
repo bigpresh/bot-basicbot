@@ -1,6 +1,7 @@
 Revision history Bot::BasicBot
 
 {{$NEXT}}
+    - Add a DESTROY method so it won't get AUTOLOADed
 
 0.87  Sat May 14 18:48:55 GMT 2011
   - Make charset_decode() use IRC::Utils::decode_irc() internally
