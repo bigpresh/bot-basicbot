@@ -1075,13 +1075,8 @@ topic of the channel.
 
 =head2 C<nick_change>
 
-When a user changes nicks, this will be called. It receives a hashref which
-will look like this:
-
-  {
-    from => "old_nick",
-    to => "new_nick",
-  }
+When a user changes nicks, this will be called. It receives two arguments:
+the old nickname and the new nickname.
 
 =head2 C<kicked>
 
