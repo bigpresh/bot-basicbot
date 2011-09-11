@@ -1,6 +1,7 @@
 Revision history Bot::BasicBot
 
 {{$NEXT}}
+  - Document the use of STDOUT after calling forkit()
 
 0.88  Sat Aug 27 15:29:39 GMT 2011
   - Add a DESTROY method so it won't get AUTOLOADed

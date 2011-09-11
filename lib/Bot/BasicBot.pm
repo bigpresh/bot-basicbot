@@ -1149,6 +1149,10 @@ events in your C<said> routine, particularly for longer running
 processes like searches, which will block the bot from receiving or
 sending on channel whilst they take place if you don't fork them.
 
+Inside the subroutine called by forkit, you can send output back to the
+channel by printing lines (followd by C<\n>) to STDOUT. This has the same
+effect as calling L<C<< Bot::BasicBot->say >>|say>.
+
 C<forkit> takes the following arguments:
 
 =over 4
