@@ -152,7 +152,7 @@ sub forkit {
 
     #install a new handler in the POE kernel pointing to
     # $self->{$args{handler}}
-    $poe_kernel->state($args->{handler}, $self);
+    $poe_kernel->state( $args->{handler}, $args->{callback} || $self  );
 
     my $run;
     if (ref($args->{run}) =~ /^CODE/) {
