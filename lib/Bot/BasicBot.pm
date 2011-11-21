@@ -397,6 +397,12 @@ sub localaddr {
     return $self->{localaddr} || 0;
 }
 
+sub useipv6 {
+    my $self = shift;
+    $self->{useipv6} = shift if @_;
+    return $self->{useipv6} || 0;
+}
+
 sub nick {
     my $self = shift;
     $self->{nick} = shift if @_;
@@ -506,6 +512,7 @@ sub start_state {
 	    UseSSL    => $self->ssl,
 	    Flood     => $self->flood,
 	    LocalAddr => $self->localaddr,
+            useipv6   => $self->useipv6,
 	    $self->charset_encode(
 		Nick     => $self->nick,
 		Username => $self->username,
@@ -1328,6 +1335,11 @@ is an SSL server.  Defaults to 0.
 
 The local address to use, for multihomed boxes.  Defaults to undef (use whatever
 source IP address the system deigns is appropriate).
+
+=head C<useipv6>
+
+A boolean to indicate whether IPv6 should be used.  Defaults to undef (use
+IPv4).
 
 =head2 C<nick>
 
