@@ -1,6 +1,8 @@
 Revision history Bot::BasicBot
 
 {{$NEXT}}
+
+0.89  Mon Nov 21 22:08:39 GMT 2011
   - Document the use of STDOUT after calling forkit()
   - Add accessors for PoCo::IRC's 'localaddr' and 'useipv6' options
   - Allow specifying a coderef callback for forkit()
