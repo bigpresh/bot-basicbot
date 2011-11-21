@@ -152,7 +152,7 @@ sub forkit {
 
     #install a new handler in the POE kernel pointing to
     # $self->{$args{handler}}
-    $poe_kernel->state($args->{handler}, $self);
+    $poe_kernel->state( $args->{handler}, $args->{callback} || $self  );
 
     my $run;
     if (ref($args->{run}) =~ /^CODE/) {
@@ -1185,6 +1185,13 @@ C<STDOUT>, and it will be passed on to your designated handler.
 Optional. A method name within your current package which we can
 return the routine's data to. Defaults to the built-in method
 C<say_fork_return> (which simply sends data to channel).
+
+=item callback
+
+Optional. A coderef to execute in place of the handler. If used, the value
+of the handler argument is used to name the POE event. This allows using
+closures and/or having multiple simultanious calls to forkit with unique
+handler for each call.
 
 =item body
 
