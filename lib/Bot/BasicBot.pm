@@ -1343,7 +1343,7 @@ is an SSL server.  Defaults to 0.
 The local address to use, for multihomed boxes.  Defaults to undef (use whatever
 source IP address the system deigns is appropriate).
 
-=head C<useipv6>
+=head2 C<useipv6>
 
 A boolean to indicate whether IPv6 should be used.  Defaults to undef (use
 IPv4).
