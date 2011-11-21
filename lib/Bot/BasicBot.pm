@@ -391,6 +391,12 @@ sub ssl {
     return $self->{ssl} || 0;
 }
 
+sub localaddr {
+    my $self = shift;
+    $self->{localaddr} = shift if @_;
+    return $self->{localaddr} || 0;
+}
+
 sub nick {
     my $self = shift;
     $self->{nick} = shift if @_;
@@ -490,21 +496,22 @@ sub start_state {
     $kernel->post($self->{IRCNAME}, 'register', 'all');
 
     $kernel->post(
-        $self->{IRCNAME},
-        'connect',
-        {
-            Nick     => $self->nick,
-            Server   => $self->server,
-            Port     => $self->port,
-            Password => $self->password,
-            UseSSL   => $self->ssl,
-            Flood    => $self->flood,
-            $self->charset_encode(
-                Nick     => $self->nick,
-                Username => $self->username,
-                Ircname  => $self->name,
-            ),
-        },
+	$self->{IRCNAME},
+	'connect',
+	{
+	    Nick      => $self->nick,
+	    Server    => $self->server,
+	    Port      => $self->port,
+	    Password  => $self->password,
+	    UseSSL    => $self->ssl,
+	    Flood     => $self->flood,
+	    LocalAddr => $self->localaddr,
+	    $self->charset_encode(
+		Nick     => $self->nick,
+		Username => $self->username,
+		Ircname  => $self->name,
+	    ),
+	},
     );
 
     return;
@@ -1316,6 +1323,11 @@ undef.
 
 A boolean to indicate whether or not the server we're going to connect to
 is an SSL server.  Defaults to 0.
+
+=head2 C<localaddr>
+
+The local address to use, for multihomed boxes.  Defaults to undef (use whatever
+source IP address the system deigns is appropriate).
 
 =head2 C<nick>
 
