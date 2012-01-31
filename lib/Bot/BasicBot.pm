@@ -912,27 +912,40 @@ Bot::BasicBot - simple irc bot baseclass
 
 =head1 SYNOPSIS
 
-  # with all defaults
-  my $bot = Bot::BasicBot->new( channels => ["#bottest"] );
-  $bot->run();
+  #!/usr/bin/perl
+  use strict;
+  use warnings;
 
-  # with all known options
-  my $bot = Bot::BasicBot->new(
+  # Subclass Bot::BasicBot to provide event-handling methods.
+  package UppercaseBot;
+  use base qw(Bot::BasicBot);
 
-    server => "irc.example.com",
-    port   => "6667",
-    channels => ["#bottest"],
+  sub said {
+      my $self      = shift;
+      my $arguments = shift;    # Contains the message that the bot heard.
 
-    nick      => "basicbot",
-    alt_nicks => ["bbot", "simplebot"],
-    username  => "bot",
-    name      => "Yet Another Bot",
+      # The bot will respond by uppercasing the message and echoing it back.
+      $self->say(
+          channel => $arguments->{channel},
+          body    => uc $arguments->{body},
+      );
 
-    ignore_list => [qw(dipsy dadadodo laotse)],
+      # The bot will shut down after responding to a message.
+      $self->shutdown('I have done my job here.');
+  }
 
+  # Create an object of your Bot::BasicBot subclass and call its run method.
+  package main;
+
+  my $bot = UppercaseBot->new(
+      server      => 'irc.example.com',
+      port        => '6667',
+      channels    => ['#bottest'],
+      nick        => 'UppercaseBot',
+      name        => 'John Doe',
+      ignore_list => [ 'laotse', 'georgeburdell' ],
   );
   $bot->run();
-
 
 =head1 DESCRIPTION
 
