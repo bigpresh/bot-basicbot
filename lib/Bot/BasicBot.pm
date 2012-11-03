@@ -1307,7 +1307,14 @@ one was prefixed. Mostly a shortcut method - it's roughly equivalent to
 
 Takes no arguments. Returns the underlying
 L<POE::Component::IRC::State|POE::Component::IRC::State> object used by
-Bot::BasicBot.
+Bot::BasicBot. Useful for accessing various state methods and for posting
+commands to the component. For example:
+
+ # get the list of nicks in the channel #someplace
+ my @nicks = $bot->pocoirc->channel_list("#someplace");
+
+ # join the channel #otherplace
+ $bot->pocoirc->yield('join', '#otherplace');
 
 =head2 C<channel_data>
 
