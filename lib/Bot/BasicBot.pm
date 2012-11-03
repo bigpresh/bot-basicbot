@@ -1456,12 +1456,12 @@ a list of strings
 =head2 C<charset_encode>
 
 Converts a list of perl strings into a list of byte sequences, using
-the bot's charset. See L<charset_decode>.
+the bot's charset. See L<C<charset_decode>|/charset_decode>.
 
 =head1 HELP AND SUPPORT
 
-If you have any questions or issues, you can drop by in #poe @
-irc.perl.org, where I (Hinrik) am usually around.
+If you have any questions or issues, you can drop by in #poe or
+#bot-basicbot @ irc.perl.org, where I (Hinrik) am usually around.
 
 =head1 AUTHOR
 
