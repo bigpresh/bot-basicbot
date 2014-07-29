@@ -735,6 +735,7 @@ sub irc_chan_received_state {
     my $return;
     my $mess = {};
     $mess->{who} = $self->nick_strip($nick);
+    $mess->{raw_nick} = $nick;
 
     $mess->{channel} = $channel;
     $mess->{body} = $received; #chanjoin or chanpart
