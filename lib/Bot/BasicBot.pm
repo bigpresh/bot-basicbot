@@ -1071,7 +1071,7 @@ This is a do-nothing implementation, override this in your subclass.
 
 =head2 C<chanpart>
 
-Called when someone joins a channel. It receives a hashref argument
+Called when someone parts a channel. It receives a hashref argument
 similar to the one received by said(). The key 'who' is the nick of the
 user who parted, while 'channel' is the channel they parted.
 
