@@ -907,6 +907,8 @@ sub charset_encode {
 
 1;
 
+=encoding utf-8
+
 =head1 NAME
 
 Bot::BasicBot - simple irc bot baseclass
