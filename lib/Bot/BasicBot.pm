@@ -1497,6 +1497,9 @@ He also sent me changes for the tick event API, which made sense.
 In November 2010, maintainership moved to Hinrik E<Ouml>rn
 SigurE<eth>sson (L<hinrik.sig@gmail.com>).
 
+In April 2017, maintainership moved to David Precious
+(L<davidp@preshweb.co.uk>).
+
 =head1 SEE ALSO
 
 L<POE>, L<POE::Component::IRC>

@@ -3,6 +3,7 @@ Revision history Bot::BasicBot
 {{$NEXT}}
   - Populate raw_nick for chanjoin (Jeremy Gainsford)
   - Small documentation improvements
+  - Maintainership transferred to David Precious
 
 0.89  Mon Nov 21 22:08:39 GMT 2011
   - Document the use of STDOUT after calling forkit()
