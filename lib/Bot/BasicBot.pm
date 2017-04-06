@@ -78,6 +78,9 @@ sub run {
 
                 irc_shutdown     => "shutdown_state",
 
+                irc_raw          => "irc_raw_state",
+                irc_raw_out      => "irc_raw_out_state",
+
                 tick => "tick_state",
             }
         ]
@@ -120,6 +123,9 @@ sub tick { return 0; }
 sub help { return "Sorry, this bot has no interactive help." }
 
 sub connected { return }
+
+sub raw_in  { return }
+sub raw_out { return }
 
 sub userquit {
     my ($self, $mess) = @_;
@@ -821,6 +827,18 @@ sub shutdown_state {
     }
     return;
 }
+
+
+sub irc_raw_state { 
+    my ($self, $kernel, $raw_line) = @_[OBJECT, KERNEL, ARG0];
+    $self->raw_in($raw_line);
+}
+sub irc_raw_out_state {
+    my ($self, $kernel, $raw_line) = @_[OBJECT, KERNEL, ARG0];
+    $self->raw_out($raw_line);
+}
+
+
 
 sub AUTOLOAD {
     my $self = shift;
