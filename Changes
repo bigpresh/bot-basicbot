@@ -5,6 +5,7 @@ Revision history Bot::BasicBot
 0.90  Wed Apr 5 23:34:09 CEST 2017
   - Populate raw_nick for chanjoin (Jeremy Gainsford)
   - Small documentation improvements
+  - add irc_raw / irc_raw_out for raw IRC events
   - Maintainership transferred to David Precious
 
 0.89  Mon Nov 21 22:08:39 GMT 2011
