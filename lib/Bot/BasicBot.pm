@@ -1174,6 +1174,15 @@ Receives a hashref which will look like:
       body => "quit message",
     }
 
+=head2 C<irc_raw>
+
+Receives a line of raw IRC input.  Intended for cases where you're trying to do
+something clever which the normal methods and parsing supplied can't handle.
+
+=head2 C<irc_raw_out>
+
+Receives a line of raw IRC output being sent to the IRC server.
+
 =head1 BOT METHODS
 
 There are a few methods you can call on the bot object to do things. These
