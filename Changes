@@ -2,6 +2,8 @@ Revision history Bot::BasicBot
 
 {{$NEXT}}
 
+0.91  Thu Apr 6 23:39:21 BST 2017
+
 0.90  Wed Apr 5 23:34:09 CEST 2017
   - Populate raw_nick for chanjoin (Jeremy Gainsford)
   - Small documentation improvements
