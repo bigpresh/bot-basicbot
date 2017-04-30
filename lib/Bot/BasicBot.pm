@@ -489,6 +489,12 @@ sub no_run {
     return $self->{no_run};
 }
 
+sub webirc {
+    my $self = shift;
+    $self->{webirc} = shift if @_;
+    return $self->{webirc};
+}
+
 sub start_state {
     my ($self, $kernel, $session) = @_[OBJECT, KERNEL, SESSION];
     $kernel->sig('DIE', 'die');
@@ -519,6 +525,7 @@ sub start_state {
 	    Flood     => $self->flood,
 	    LocalAddr => $self->localaddr,
             useipv6   => $self->useipv6,
+            WebIRC    => $self->webirc,
 	    $self->charset_encode(
 		Nick     => $self->nick,
 		Username => $self->username,
@@ -1447,6 +1454,12 @@ Set to '1' to disable the built-in flood protection of POE::Compoent::IRC
 
 Tells Bot::BasicBot to B<not> run the L<POE kernel|POE::Kernel> at the end
 of L<C<run>|/run>, in case you want to do that yourself.
+
+=head2 C<webirc>
+
+A hashref of WEBIRC params - keys C<user>, C<pass>, C<host> and C<ip>.  Unless
+the network you are connecting to trusts you enough to give you a WEBIRC config
+block & password, this won't be of any use to you.
 
 =head1 OTHER METHODS
 
