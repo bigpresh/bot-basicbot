@@ -525,7 +525,7 @@ sub start_state {
 	    Flood     => $self->flood,
 	    LocalAddr => $self->localaddr,
             useipv6   => $self->useipv6,
-            WebIRC    => $self->webirc,
+            webirc    => $self->webirc,
 	    $self->charset_encode(
 		Nick     => $self->nick,
 		Username => $self->username,
