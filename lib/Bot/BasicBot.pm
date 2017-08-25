@@ -1237,7 +1237,7 @@ handler for each call.
 =item body
 
 Optional. Use this to pass on the body of the incoming message that
-triggered you to fork this process. Useful for interactive proceses
+triggered you to fork this process. Useful for interactive processes
 such as searches, so that you can act on specific terms in the user's
 instructions.
 
@@ -1348,7 +1348,7 @@ commands to the component. For example:
 Takes a channel names as a parameter, and returns a hash of hashes. The
 keys are the nicknames in the channel, the values are hashes containing
 the keys "voice" and "op", indicating whether these users are voiced or
-opped in the channel. This method is only here for backwards compatability.
+opped in the channel. This method is only here for backwards compatibility.
 You'll probably get more use out of
 L<POE::Component::IRC::State|POE::Component::IRC::State>'s methods (which
 this method is merely a wrapper for). You can access the
@@ -1517,7 +1517,7 @@ AUTOLOAD stuff, better interactive help, and a few API tidies.
 Maintainership for a while was in the hands of Simon Kent
 E<lt>simon@hitherto.netE<gt>. Don't know what he did. :-)
 
-I (Tom Insam) recieved patches for tracking joins and parts from Silver,
+I (Tom Insam) received patches for tracking joins and parts from Silver,
 sat on them for two months, and have finally applied them. Thanks, dude.
 He also sent me changes for the tick event API, which made sense.
 
