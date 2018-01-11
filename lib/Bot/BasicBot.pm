@@ -548,9 +548,11 @@ sub irc_001_state {
         $self->charset_encode($self->nick),
     );
 
+    $self->log("Connected to " . $self->server);
+
     # connect to the channel
     for my $channel ($self->channels) {
-        $self->log("Trying to connect to '$channel'\n");
+        $self->log("Trying to join '$channel'\n");
         $kernel->post(
             $self->{IRCNAME},
             'join',
