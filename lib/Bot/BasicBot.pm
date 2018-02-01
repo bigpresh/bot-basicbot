@@ -1143,7 +1143,7 @@ topic of the channel.
 When a user changes nicks, this will be called. It receives two arguments:
 the old nickname and the new nickname.
 
-=head C<mode_change>
+=head2 C<mode_change>
 
 When a user sets channel modes, or the bot (or someone sharing its bouncer
 connection?) sets user modes, this will be called.  It receives a hashref
