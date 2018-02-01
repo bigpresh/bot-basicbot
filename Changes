@@ -1,6 +1,8 @@
 Revision history Bot::BasicBot
 
 {{$NEXT}}
+  - new mode_change() method fired when modes change
+  - More accurate log messages upon connection
 
 0.91  Thu Apr 6 23:39:21 BST 2017
 
