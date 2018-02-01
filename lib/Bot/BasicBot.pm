@@ -67,6 +67,7 @@ sub run {
                 irc_kick         => "irc_kicked_state",
                 irc_nick         => "irc_nick_state",
                 irc_quit         => "irc_quit_state",
+                irc_mode         => "irc_mode_state",
 
                 fork_close       => "fork_close_state",
                 fork_error       => "fork_error_state",
@@ -115,6 +116,8 @@ sub got_names { return }
 sub topic { return }
 
 sub nick_change { return }
+
+sub mode_change { return }
 
 sub kicked { return }
 
@@ -602,6 +605,20 @@ sub irc_nick_state {
     my ($self, $nick, $newnick) = @_[OBJECT, ARG0, ARG1];
     $nick = $self->nick_strip($nick);
     $self->nick_change($nick, $newnick);
+    return;
+}
+
+sub irc_mode_state {
+    my ($self, $nick, $channel, $mode_changes) = @_[OBJECT, ARG0, ARG1, ARG2];
+    my @mode_operands = @_[ARG3..$#_];
+    $self->mode_change(
+        {
+            channel       => $channel,
+            who           => $nick,
+            mode_changes  => $mode_changes,
+            mode_operands => \@mode_operands,
+        }
+    );
     return;
 }
 
@@ -1125,6 +1142,19 @@ topic of the channel.
 
 When a user changes nicks, this will be called. It receives two arguments:
 the old nickname and the new nickname.
+
+=head C<mode_change>
+
+When a user sets channel modes, or the bot (or someone sharing its bouncer
+connection?) sets user modes, this will be called.  It receives a hashref
+which will look like the following:
+
+  {
+      channel => "#channel",
+      who => "nick!user@host",
+      mode_changes => "+o+v",
+      mode_operands => ["bigpresh", "somedude"],
+  }
 
 =head2 C<kicked>
 
