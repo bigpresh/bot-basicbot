@@ -1531,7 +1531,10 @@ If you have any questions or issues, you can drop by in #poe or
 
 =head1 AUTHOR
 
-Tom Insam E<lt>tom@jerakeen.orgE<gt>
+David Precious (BIGPRESH) C<< <davidp@preshweb.co.uk> >> is the 
+current maintainer.
+
+Tom Insam E<lt>tom@jerakeen.orgE<gt> was the original author.
 
 This program is free software; you can redistribute it
 and/or modify it under the same terms as Perl itself.
