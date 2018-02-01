@@ -1561,7 +1561,11 @@ In April 2017, maintainership moved to David Precious
 
 =head1 SEE ALSO
 
-L<POE>, L<POE::Component::IRC>
+If you want to write/run a more flexible bot which supports module loading,
+authentication, data storage etc, consider the subclass
+L<Bot::BasicBot::Pluggable>.
+
+Also see L<POE>, L<POE::Component::IRC>
 
 Possibly Infobot, at http://www.infobot.org
 
