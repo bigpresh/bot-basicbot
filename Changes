@@ -1,6 +1,8 @@
 Revision history Bot::BasicBot
 
 {{$NEXT}}
+
+0.93  Fri Feb 2 00:12:02 GMT 2018
   - Support WEBIRC
   - Typo fixes
   - Pass just the nick, not full n!u@h, to newly-introduced
