@@ -1158,7 +1158,7 @@ which will look like the following:
 
   {
       channel => "#channel",
-      who => "nick!user@host",
+      who => "nick",
       mode_changes => "+o+v",
       mode_operands => ["bigpresh", "somedude"],
   }
