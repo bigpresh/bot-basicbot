@@ -621,7 +621,7 @@ sub irc_mode_state {
     $self->mode_change(
         {
             channel       => $channel,
-            who           => $nick,
+            who           => $self->nick_strip($nick),
             mode_changes  => $mode_changes,
             mode_operands => \@mode_operands,
         }
