@@ -280,6 +280,24 @@ sub say {
     return;
 }
 
+sub set_topic {
+    my ($self, %args) = @_;
+
+    if (!$args{channel}) {
+        warn "No channel argument provided to set_topic";
+        return;
+    }
+
+    $poe_kernel->post(
+        $self->{IRCNAME},
+        "topic",
+        $self->charset_encode($args{channel}),
+        $self->charset_encode($args{topic}),
+    );
+
+    return;
+}
+
 sub emote {
     # If we're called without an object ref, then we're handling emoting
     # stuff from inside a forked subroutine, so we'll freeze it, and
@@ -1145,6 +1163,13 @@ argument. The key 'channel' is the channel the topic was set in, and 'who'
 is the nick of the user who changed the channel, 'topic' will be the new
 topic of the channel.
 
+This should have been named C<topic_change> really, but it's probably too late
+to change that now.
+
+If you need to set the topic, see L<set_topic> - ordinarily you could have just
+called C<topic()> and the AUTOLOAD magic would have passed that through to
+Poco::IRC, but the presence of this method will prevent that.
+
 =head2 C<nick_change>
 
 When a user changes nicks, this will be called. It receives two arguments:
@@ -1393,6 +1418,11 @@ L<POE::Component::IRC::State|POE::Component::IRC::State>'s methods (which
 this method is merely a wrapper for). You can access the
 POE::Component::IRC::State object through Bot::BasicBot's C<pocoirc>
 method.
+
+=head2 C<set_topic>
+
+Set the topic for a channel.  Takes a hash with keys C<channel> and
+C<topic>.
 
 =head1 ATTRIBUTES
 
