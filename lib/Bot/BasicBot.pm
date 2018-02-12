@@ -1041,8 +1041,8 @@ Runs the bot.  Hands the control over to the POE core.
 
 =head1 STOPPING THE BOT
 
-To shut down the bot cleanly, use the L<C<shutdown>|/shutdown> method,
-which will (through L<C<AUTOLOAD>|/AUTOLOAD>) send an
+To shut down the bot cleanly, use the C<shutdown> method,
+which will (through C<AUTOLOAD>) send an
 L<event|POE::Component::IRC/shutdown> of the same name to
 POE::Component::IRC, so it takes the same arguments:
 
@@ -1600,10 +1600,10 @@ sat on them for two months, and have finally applied them. Thanks, dude.
 He also sent me changes for the tick event API, which made sense.
 
 In November 2010, maintainership moved to Hinrik E<Ouml>rn
-SigurE<eth>sson (L<hinrik.sig@gmail.com>).
+SigurE<eth>sson (C<< <hinrik.sig@gmail.com> >>).
 
 In April 2017, maintainership moved to David Precious
-(L<davidp@preshweb.co.uk>).
+(C<< <davidp@preshweb.co.uk> >>).
 
 =head1 SEE ALSO
 
