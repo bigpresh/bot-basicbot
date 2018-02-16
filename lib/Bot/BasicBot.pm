@@ -252,7 +252,8 @@ sub say {
     }
 
     # if we have a long body, split it up..
-    local $Text::Wrap::columns = 300;
+    #local $Text::Wrap::columns = 300;
+    local $Text::Wrap::columns = 294;
     local $Text::Wrap::unexpand = 0; # no tabs
     my $wrapped = Text::Wrap::wrap('', '..', $body); #  =~ m!(.{1,300})!g;
     # I think the Text::Wrap docs lie - it doesn't do anything special
@@ -266,7 +267,14 @@ sub say {
         : 'privmsg';
 
     # post an event that will send the message
+    my $last_color;
     for my $body (@bodies) {
+	if (defined $last_color) {
+	    $body = "..\cC$last_color".substr $body, 2;
+	}
+	if ((my $bcol = rindex $body, "\cC") > -1) {
+	    $last_color = (substr $body, $bcol + 1) =~ /^(\d{1,2}(?:,\d{1,2})?)/ ? $1 : undef;
+	}
         my ($enc_who, $enc_body) = $self->charset_encode($who, $body);
         #warn "$enc_who => $enc_body\n";
         $poe_kernel->post(
