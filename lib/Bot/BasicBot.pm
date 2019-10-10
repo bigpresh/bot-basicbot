@@ -588,11 +588,15 @@ sub irc_001_state {
 
     # connect to the channel
     for my $channel ($self->channels) {
+        my @args = $self->charset_encode($channel);
+        if ($self->{channel_keys}{$channel}) {
+            push @args, $self->{channel_keys}{$channel};
+        }
         $self->log("Trying to join '$channel'\n");
         $kernel->post(
             $self->{IRCNAME},
             'join',
-            $self->charset_encode($channel),
+            @args,
         );
     }
 
@@ -1009,12 +1013,13 @@ Bot::BasicBot - simple irc bot baseclass
   package main;
 
   my $bot = UppercaseBot->new(
-      server      => 'irc.example.com',
-      port        => '6667',
-      channels    => ['#bottest'],
-      nick        => 'UppercaseBot',
-      name        => 'John Doe',
-      ignore_list => [ 'laotse', 'georgeburdell' ],
+      server       => 'irc.example.com',
+      port         => '6667',
+      channels     => ['#bottest', '#secret'],
+      channel_keys => { '#secret' => 'hunter2' },
+      nick         => 'UppercaseBot',
+      name         => 'John Doe',
+      ignore_list  => [ 'laotse', 'georgeburdell' ],
   );
   $bot->run();
 
@@ -1500,6 +1505,11 @@ The name that the bot will identify itself as.  Defaults to
 =head2 C<channels>
 
 The channels we're going to connect to.
+
+=head2 C<channel_keys>
+
+An optional hashref of channel => key, for any channels we wish to join
+which have a key (+k) set.
 
 =head2 C<quit_message>
 
