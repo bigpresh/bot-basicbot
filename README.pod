@@ -179,7 +179,7 @@ a chanop or voiced respectively.
 
 The reply value is ignored.
 
-Normally, I wouldn't override this method - instead, just use the L<names>
+Normally, I wouldn't override this method - instead, just use the L</names>
 call when you want to know who's in the channel. Override this only if you
 want to be able to do something as soon as possible. Also be aware that
 the names list can be changed by other events - kicks, joins, etc, and this
@@ -235,7 +235,7 @@ return non-zero values to have an ongoing tick event.
 Use this function if you want the bot to do something periodically, and
 don't want to mess with 'real' POE things.
 
-Call the L<schedule_tick> event to schedule a tick event without waiting
+Call the L</schedule_tick> event to schedule a tick event without waiting
 for the next tick.
 
 =head2 C<help>
@@ -276,7 +276,7 @@ are as follows:
 
 =head2 C<schedule_tick>
 
-Takes an integer as an argument. Causes the L<tick> event to be called
+Takes an integer as an argument. Causes the L</tick> event to be called
 after that many seconds (or 5 seconds if no argument is provided). Note
 that if the tick event is due to be called already, this will override it.
 You can't schedule multiple future events with this funtction.
@@ -292,7 +292,7 @@ sending on channel whilst they take place if you don't fork them.
 
 Inside the subroutine called by forkit, you can send output back to the
 channel by printing lines (followd by C<\n>) to STDOUT. This has the same
-effect as calling L<C<< Bot::BasicBot->say >>|say>.
+effect as calling L</say>.
 
 C<forkit> takes the following arguments:
 
@@ -594,7 +594,7 @@ If you have any questions or issues, you can drop by in #poe or
 David Precious (BIGPRESH) C<< <davidp@preshweb.co.uk> >> is the 
 current maintainer.
 
-Tom Insam E<lt>tom@jerakeen.orgE<gt> was the original author.
+Tom Insam C<< <tom@jerakeen.org> >> was the original author.
 
 This program is free software; you can redistribute it
 and/or modify it under the same terms as Perl itself.
@@ -610,17 +610,17 @@ Various patches from Tom Insam, including much improved rejoining,
 AUTOLOAD stuff, better interactive help, and a few API tidies.
 
 Maintainership for a while was in the hands of Simon Kent
-E<lt>simon@hitherto.netE<gt>. Don't know what he did. :-)
+C<< <simon@hitherto.net> >>. Don't know what he did. :-)
 
 I (Tom Insam) received patches for tracking joins and parts from Silver,
 sat on them for two months, and have finally applied them. Thanks, dude.
 He also sent me changes for the tick event API, which made sense.
 
 In November 2010, maintainership moved to Hinrik E<Ouml>rn
-SigurE<eth>sson (L<hinrik.sig@gmail.com>).
+SigurE<eth>sson C<< <hinrik.sig@gmail.com> >>.
 
 In April 2017, maintainership moved to David Precious
-(L<davidp@preshweb.co.uk>).
+C<< <davidp@preshweb.co.uk> >>.
 
 =head1 SEE ALSO
 
